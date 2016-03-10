@@ -125,9 +125,8 @@ def renderGraph():
 		sleep(.5)
 
 		hashobs = [ {"tag": key, "count": hashtags[key]} for key in hashtags ]
-		print hashtags
-		print hashobs
-		return json.dumps(hashobs)
+		result = sorted(hashobs, key=lambda x: x["count"], reverse=True)[:20]
+		return json.dumps(result)
 
 	else: 
 		pass 

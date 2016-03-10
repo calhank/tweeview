@@ -277,30 +277,36 @@ function tick() {
       labels.exit()
         .remove();
 
-      // //y axis
-      // svg.append('g')
-      //   .call(yAxis)
-      //   .attr('class', 'axis')
-      //   .attr('id','yaxis')
-      //   .attr('transform', 'translate(' + minw + ',0)');
+      //y axis
+      d3.selectAll('.axis')
+        .remove();
 
-      // // x axis
-      // svg.append('g')
-      //   .call(xAxis)
-      //   .attr('class', 'axis')
-      //   .attr('transform', 'translate(0,' + minh + ')')
-      //   // powers of 10 code borrowed from http://bl.ocks.org/mbostock/6738229
-      //   .selectAll(".tick text")
-      //       .text(null)
-      //       .filter(powerOfTen)
-      //     .text(10)
-      //       .append("tspan")
-      //       .attr("dy", "-.7em")
-      //     .text(function(d) { return Math.round(Math.log(d) / Math.LN10); });
+      d3.selectAll('.tick text')
+        .remove();
 
-      // function powerOfTen(d) {
-      //   return d / Math.pow(10, Math.ceil(Math.log(d) / Math.LN10 - 1e-12)) === 1;
-      // };
+      svg.append('g')
+        .call(yAxis)
+        .attr('class', 'axis')
+        .attr('id','yaxis')
+        .attr('transform', 'translate(' + minw + ',0)');
+
+      // x axis
+      svg.append('g')
+        .call(xAxis)
+        .attr('class', 'axis')
+        .attr('transform', 'translate(0,' + minh + ')')
+        // powers of 10 code borrowed from http://bl.ocks.org/mbostock/6738229
+        .selectAll(".tick text")
+            .text(null)
+            .filter(powerOfTen)
+          .text(10)
+            .append("tspan")
+            .attr("dy", "-.7em")
+          .text(function(d) { return Math.round(Math.log(d) / Math.LN10); });
+
+      function powerOfTen(d) {
+        return d / Math.pow(10, Math.ceil(Math.log(d) / Math.LN10 - 1e-12)) === 1;
+      };
 
       // // title
       // svg.append("text")
