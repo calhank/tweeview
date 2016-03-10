@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+  <style>
+
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: black;
+        shape-rendering: crispEdges;
+    }
+
+    .axis text {
+      fill: black;
+        font-family: sans-serif;
+        font-size: 11px;
+    }
+
+    #yaxis path {
+      fill: none;
+      stroke: black;
+      shape-rendering: crispEdges;
+    }
+
+    #yaxis text {
+      fill:black;
+    }
+
+    .label {
+      font-family: sans-serif;
+      /*fill: black;*/
+      font-weight: bold;
+      pointer-events: none;
+    }
+
+    .title {
+      font-family: Lato;
+      fill: black;
+      font-size: 18px;
+    }
+
+    div.tooltip { 
+        position: absolute;     
+        text-align: center;         
+        padding: 10px;      
+        background: rgb(200,200,200); 
+        border: 0px;    
+        border-radius: 8px;
+        pointer-events: none;     
+    }
+
+    .ttipTable {
+      /*text-align: right;*/
+    }
+
+    .ttipText {
+      text-align: left;
+      font: 14px sans-serif bold;
+      font-weight: bold;
+    }
+
+    .ttipTitle {
+      text-align: right;
+      font: 14px sans-serif;
+    }
+
+    #topHashtags{
+      float: left;
+    }
+
+    #globalSentiment {
+
+    }
+
+    .line {
+      fill: none;
+      stroke: #000;
+      stroke-width: 1.5px;
+    }
+
+  </style>
+<body>
+
+<!--
+TweeView Live Page Demo
+-->
+<h1>TweeView Preview</h1>
+<br>
+<div>
+  <div id="totalTweets">Total Tweets: <span id="totalTweetsVal">0</span></div>
+  <div id="totalTweets">Unique Hashtags: <span id="uniqueHashtagsVal">0</span></div>
+</div>
+<div id="topHashtags"></div>
+<div id="globalSentiment"></div>
+<div id="sentimentLine"></div>
+<!-- <div id="topAts"></div> -->
+<!-- <div id="topHashTweets"></div> -->
+
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="https://code.jquery.com/jquery-2.2.1.min.js"></script>
+
+  <script type='text/javascript'>
+
+  var windowHeight = 800;
+  var windowWidth = 1200;
+  var pheight = windowHeight / 2;
+  var pwidth = windowWidth / 2;
+  var xcushion = 30;
+  var ycushion = 50;
+
+  function minh(plotRow){
+    return ycushion + plotRow * pheight;
+  }
+  function maxh(plotRow){
+    return (1 + plotRow) * pheight - ycushion;
+  }
+  function minw(plotCol){
+    return xcushion + pwidth * plotCol;
+  }
+  function maxw(plotCol){
+    return  (1 + plotCol) * pwidth - xcushion;
+  }
+
+  //
+  // STATIC HTML ELEMENTS
+  //
+
+  var svg = d3.select("#topHashtags")
+        .append('svg')
+        .attr({
+          width: pwidth,
+          height: pheight
+        });
+
+  // init tooltip
+  // toolltip adapted from http://bl.ocks.org/d3noob/a22c42db65eb00d4e369
+  var ttip = d3.select('body').append("div")  
+      .attr("class", "tooltip")     
+      .style("opacity", 0);
+
+  var ttipTable = ttip.append("table")
+    .attr("class","ttipTable");
+
+  var ttipRow = ttipTable.append('tr');
+  ttipRow.append('td').attr('class','ttipTitle').text("Tag");
+  var ttipSiteName = ttipRow.append('td')
+    .attr('id','siteName')
+    .attr('class','ttipText');
+
+  var ttipRow = ttipTable.append('tr');
+  ttipRow.append('td').attr('class','ttipTitle').text("Count");
+  var ttipSiteVisits = ttipRow.append('td')
+    .attr('id','siteVisits')
+    .attr('class','ttipText');
+
+  var ttipRow = ttipTable.append('tr');
+  ttipRow.append('td').attr('class','ttipTitle').text("Avg. Sentiment");
+  var ttipSentiment = ttipRow.append('td')
+    .attr('id','avgSent')
+    .attr('class','ttipText');
+
+  var ttipRow = ttipTable.append('tr');
+  ttipRow.append('td').attr('class','ttipTitle').text("Rank");
+  var ttipRank = ttipRow.append('td')
+    .attr('id','rank')
+    .attr('class','ttipText');
+
+// TOP LEFT BAR GRAPH
+
+  svg.append('rect')
+    .attr({
+      class: 'outline',
+      x: 0,
+      y: 0,
+      height: pheight,
+      width: pwidth,
+      stroke: 'white',
+      fill: 'white'
+    });
+
+    svg.append("text")
+    .attr({
+      x: pwidth / 2, 
+      y: minh(0) * .4,
+      'text-anchor': 'middle',
+      class: 'title'
+    })
+    .text("Top 20 Hashtags");
+
+  // // x-axis label
+  // svg.append("text")
+  //   .attr({
+  //     x: pwidth / 2, 
+  //     y: minh(0) *.4 + 18,
+  //     'text-anchor': 'middle',
+  //     style: 'font-size:12px;fill:white;'
+  //   })
+  //   .text("Base10 Log of Visits");
+
+    var negSentimentColorScale = d3.scale.sqrt()
+    .domain([-1, 0])
+    .rangeRound([ 0,230])
+
+    var posSentimentColorScale = d3.scale.sqrt()
+      .domain([0, 1]) 
+      .rangeRound([230,0])
+
+// right histogram
+
+  var sentHistSvg = d3.select("#globalSentiment").append("svg")
+    .attr("width", pwidth)
+    .attr("height", pheight)
+    .attr("x", 0)
+    .attr("y", 0)
+
+
+  sentHistSvg.append("text")
+    .attr({
+      x: pwidth / 2, 
+      y: minh(0) * .4,
+      'text-anchor': 'middle',
+      class: 'title'
+    })
+    .text("Distribution of Sentiment for Last 10K Non-Neutral Tweets");
+
+// bottom left sentiment line graph
+
+var numRand = 40,
+    randomGen = d3.random.normal(0, 0),
+    randData = d3.range(numRand).map(randomGen);
+
+var sentLineXScale = d3.scale.linear()
+    .domain([0, numRand-1])
+    .range([0, maxw(0)]);
+
+var sentLineYScale = d3.scale.linear()
+    .domain([-1, 1])
+    .range([maxh(0), minh(0)]);
+
+var sentLine = d3.svg.line()
+    .x(function(d, i) { return sentLineXScale(i); })
+    .y(function(d, i) { return sentLineYScale(d); });
+
+var sentLineSvg = d3.select("#sentimentLine").append("svg")
+    .attr("width", pwidth)
+    .attr("height", pheight)
+  .append("g")
+    .attr("transform", "translate(" + minw(0) + "," + minh(0) + ")");
+
+sentLineSvg.append("defs").append("clipPath") // clipping path
+    .attr("id", "clip")
+  .append("rect")
+    .attr("width", pwidth - 2 * xcushion)
+    .attr("height", pheight - 2 * ycushion);
+
+sentLineSvg.append("g") // x axis
+    .attr("id", "axisSl")
+    .attr('class','axis')
+    .attr("transform", "translate(0," + sentLineYScale(0) + ")")
+    .call(d3.svg.axis().scale(sentLineXScale).orient("bottom"));
+
+sentLineSvg.append("g") // y axis
+    .attr("id", "axisSl")
+    .attr('class','axis')
+    .call(d3.svg.axis().scale(sentLineYScale).orient("left"));
+
+var sentLinePath = sentLineSvg.append("g")
+    .attr("clip-path", "url(#clip)")
+  .append("path")
+    .datum(randData)
+    .attr("class", "line")
+    .attr("d", sentLine);
+
+ sentLineSvg.append("text")
+    .attr({
+      x: pwidth / 2, 
+      y: minh(0) * .4,
+      'text-anchor': 'middle',
+      class: 'title'
+    })
+    .text("Recent Tweet Sentiment");
+
+refreshCharts();
+function refreshCharts() {
+
+  $.post('/', function(value) {
+
+    var newData = JSON.parse(value);
+
+    // TOTAL TWEETS AND HASHTAGS
+    d3.select('#totalTweetsVal')
+      .text(newData[2]); // total tweets;
+
+    d3.select('#uniqueHashtagsVal')
+      .text(newData[3]); // unique hashtags
+
+    // 
+    // TOP LEFT
+    //
+      // bar graph of top 20 tweets
+      var sortedData = newData[0];
+
+      var yScale = d3.scale.ordinal()
+        .domain(d3.range(sortedData.length))
+        .rangeBands([minh(0), maxh(0)], 0.1);
+
+      var xScale = d3.scale.log()
+        .domain([ 1, d3.max(sortedData, function(d){return parseInt(d.count,10);}) ])
+        .range([minw(0), maxw(0)]);
+
+      var xAxis = d3.svg.axis()
+        .scale(xScale) 
+        .orient('top')
+        .ticks(25);
+
+      var yAxis = d3.svg.axis()
+        .scale(yScale)
+        .orient('left');
+
+      var bars = svg.selectAll('rect.bar')
+          .data(sortedData);
+
+      var labels=svg.selectAll(".label")
+          .data(sortedData);
+
+      // bar graph bars
+      bars.enter()
+        .append('rect')
+        .attr('class','bar')
+        .attr('fill',function(d){ 
+          if( d.sentiment == 0.0){
+            return 'rgb(230,230,230)';
+          }
+          else if( d.sentiment > 0.0) {
+            return 'rgb('+posSentimentColorScale(d.sentiment)+ ',' +posSentimentColorScale(d.sentiment)+ ',230)';
+          }
+          else {
+            return 'rgb(230,'+negSentimentColorScale(d.sentiment)+','+negSentimentColorScale(d.sentiment)+')';
+          }
+        })
+        .attr('y', function(d, i){ return yScale(i); })
+        .attr('x', minw(0))
+        .attr('height', yScale.rangeBand())
+        .attr('width', function(d){ return xScale(d.count) - minw(0); })
+        .on('mouseover', function(d,i){         
+          // set tooltip text values
+          ttipRank.text(i);         
+          ttipSiteName.text(d.tag);
+          ttipSiteVisits.text(d.count);
+          ttipSentiment.text(d.sentiment);
+          //  enter tooltip
+          ttip.transition()
+            .duration(50)
+            .style({
+              'opacity':.95,
+              'left': (d3.event.pageX) + 'px',
+              'top': (d3.event.pageY - 28) + 'px',
+            })
+        })
+        .on('mouseout', function(){
+          // exit tooltip
+          ttip.transition()
+            .duration(250)
+            .style({opacity: 0})
+        });
+
+        bars.transition()
+          .attr('fill',function(d){ 
+            if( d.sentiment == 0.0){
+              return 'rgb(230,230,230)';
+            }
+            else if( d.sentiment > 0.0) {
+              return 'rgb('+posSentimentColorScale(d.sentiment)+ ',' +posSentimentColorScale(d.sentiment)+ ',230)';
+            }
+            else {
+              return 'rgb(230,'+negSentimentColorScale(d.sentiment)+','+negSentimentColorScale(d.sentiment)+')';
+            }
+          })
+          .attr('y', function(d, i){ return yScale(i); })
+          .attr('height', yScale.rangeBand())
+          .attr('width', function(d){ return xScale(d.count) - minw(0); });
+
+        bars.exit()
+          .remove();
+
+        // bar graph labels
+        labels.enter()
+          .append('text')
+          .attr('fill', function(d){ if( Math.abs(d.sentiment) > .25 ){ return 'white'; } else { return 'black';} })
+          .attr({
+            class: 'label',
+            x: minw(0) + 5,
+            y: function(d, i){ return yScale(i) + yScale.rangeBand() - 4; }
+          })
+          .style('font-size', function(){
+            if( yScale.rangeBand() >= 11 ){
+              return yScale.rangeBand() - 5;
+            } else {
+              return 0;
+            }
+          })
+          .text(function(d){return d.tag;});
+
+          labels.transition()
+              .attr({
+                x: minw(0) + 5,
+                y: function(d, i){ return yScale(i) + yScale.rangeBand() * .7; }
+              })
+              .attr('fill', function(d){ if( Math.abs(d.sentiment) > .25 ){ return 'white'; } else { return 'black';} })
+              .style('font-size', function(){
+                if( yScale.rangeBand() >= 6 ){
+                  return yScale.rangeBand() * .7;
+                } else {
+                  return 0;
+                }
+              })
+              .style('opacity', function(){
+                if( yScale.rangeBand() >= 6 ){
+                  return 1;
+                } else {
+                  return 0;
+                }
+              })
+              .text(function(d){return d.tag;});
+
+        labels.exit()
+          .remove();
+
+        //y axis
+        d3.selectAll('#yaxis')
+          .remove();
+
+        d3.selectAll('#yaxis.tick text')
+          .remove();
+
+        d3.selectAll('#xaxis')
+          .remove();
+
+        d3.selectAll('#xaxis.tick text')
+          .remove();
+
+        svg.append('g')
+          .call(yAxis)
+          .attr('class', 'axis')
+          .attr('id','yaxis')
+          .attr('transform', 'translate(' + minw(0) + ',0)');
+
+        // x axis
+        svg.append('g')
+          .call(xAxis)
+          .attr('class', 'axis')
+          .attr('id','xaxis')
+          .attr('transform', 'translate(0,' + minh(0) + ')')
+          // powers of 10 code borrowed from http://bl.ocks.org/mbostock/6738229
+          .selectAll(".tick text")
+              .text(null)
+              .filter(powerOfTen)
+            .text(10)
+              .append("tspan")
+              .attr("dy", "-.7em")
+            .text(function(d) { return Math.round(Math.log(d) / Math.LN10); });
+
+        function powerOfTen(d) {
+          return d / Math.pow(10, Math.ceil(Math.log(d) / Math.LN10 - 1e-12)) === 1;
+        };
+
+
+        ///
+        // SENTIMENT HISTOGRAM
+        ///
+
+        // A formatter for counts.
+        var sentHistFormatCount = d3.format(",.0f");
+
+        var sentHistXScale = d3.scale.linear()
+            .domain([-1, 1])
+            .range([minw(0), maxw(0)]);
+
+        // Generate a histogram using twenty uniformly-spaced bins.
+        var sentHistLayout = d3.layout.histogram()
+            .bins(sentHistXScale.ticks(20))
+            (newData[1]);
+
+        var sentHistYScale = d3.scale.linear()
+            .domain([0, d3.max(sentHistLayout, function(d) { return d.y; })])
+            .range([maxh(0), minh(0)]);
+
+        var sentHistXAxis = d3.svg.axis()
+            .scale(sentHistXScale)
+            .orient("bottom");
+
+        var sentHistYAxis = d3.svg.axis()
+            .scale(sentHistYScale)
+            .orient("right");
+
+        var sentHistBars = sentHistSvg.selectAll('rect.barSh')
+            .data(sentHistLayout);
+
+        var sentHistLabels=sentHistSvg.selectAll(".labelSh")
+            .data(sentHistLayout);
+
+        sentHistBars.enter()
+          .append("rect")
+            .attr("class", "barSh")
+            .attr("x", function(d){return sentHistXScale(d.x);})
+            .attr("y", function(d) { return sentHistYScale(d.y); })
+            .attr('fill','blue')
+            .attr('value', function(d){
+              // console.log(sentHistXScale.range()[1]);
+              // console.log( (sentHistXScale.range()[1] - sentHistXScale.range()[0]) / sentHistLayout.length );
+            })
+            .attr('fill',function(d){ 
+                    if( d.x >= 0.0) {
+                      return 'rgb('+posSentimentColorScale(d.x)+ ',' +posSentimentColorScale(d.x)+ ',230)';
+                    }
+                    else {
+                      return 'rgb(230,'+negSentimentColorScale(d.x)+','+negSentimentColorScale(d.x)+')';
+                    }
+                  })
+            .attr("width", ( (sentHistXScale.range()[1] - sentHistXScale.range()[0]) / sentHistLayout.length ) - 2 )
+            .attr("height", function(d) { return maxh(0) - sentHistYScale(d.y); });
+
+        sentHistLabels.enter()
+          .append("text")
+            .attr('class', 'labelSh')
+            .style('font-size', 12)
+            .attr("dy", ".75em")
+            .attr("y", function(d) { return sentHistYScale(d.y) - 13.5; })
+            .attr("x", function(d){return sentHistXScale(d.x) + 13;})
+            .attr("text-anchor", "middle")
+            .attr('fill','black')
+            .text(function(d) { return sentHistFormatCount(d.y); });
+
+        sentHistBars.transition()
+          .attr("y", function(d) { return sentHistYScale(d.y); })
+          .attr("height", function(d) { return maxh(0) - sentHistYScale(d.y); });
+
+        sentHistLabels.transition()
+          .attr("y", function(d) { return sentHistYScale(d.y) - 14; })  
+          .text(function(d) { return sentHistFormatCount(d.y); });
+
+        d3.select('#xAxisSh')
+          .remove();
+
+        d3.select('#yAxisSh')
+          .remove();
+
+        sentHistSvg.append("g")
+            .attr("id", "xAxisSh")
+            .attr("class", "axis")
+            .attr("transform", "translate(0," + maxh(0) + ")")
+            .call(sentHistXAxis);
+
+
+        sentHistSvg.append("g")
+            .attr("id", "yAxisSh")
+            .attr("class", "axis")
+            .attr("transform", "translate(" + maxw(0) + ",0)")
+            .call(sentHistYAxis);
+
+
+        ///
+        // SENTIMENT LINE
+        ///
+
+        randData.push(newData[4]);
+        console.log(newData[4]);
+
+        sentLinePath
+          .attr("d", sentLine)
+          .attr("transform", null)
+        .transition()
+          // .duration(500)
+          // .ease("linear")
+          .attr("transform", "translate(" + sentLineXScale(-1) + ",0)");
+          // .each("end", tick);
+
+        // pop the old data point off the front
+        randData.shift();
+
+
+
+
+    refreshCharts();
+    
+
+  });
+  
+}
+
+</script>
