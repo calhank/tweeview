@@ -56,7 +56,7 @@ class MyStreamListener(tweepy.StreamListener):
 				# hashtags[m] = {"count": 1, "sentiment": {"pos": score['pos'], "neg":score['neg']} }
 
 		if abs(score["compound"]) > 0.0:
-			if len(global_sentiment) > 5000: global_sentiment.pop(0)
+			if len(global_sentiment) > 500: global_sentiment.pop(0)
 			global_sentiment.append(score["compound"])
 			recent_sentiment.append(score["compound"])
 
@@ -117,7 +117,7 @@ def renderGraph():
 		top20hashtags = sorted(taglist, key=lambda x: x["count"], reverse=True)[:20]		
 		unique_count = len(hashtags)
 		rs = sum(recent_sentiment)/len(recent_sentiment) if len(recent_sentiment) > 0 else 0
-		recent_sentiment = list()
+		recent_sentiment = recent_sentiment[:10]
 		return json.dumps([top20hashtags, global_sentiment, total_count['ct'], unique_count, rs])
 	else: 
 		pass 

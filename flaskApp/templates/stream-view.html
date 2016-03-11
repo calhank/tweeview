@@ -77,6 +77,10 @@
       stroke-width: 1.5px;
     }
 
+    #xAxisSl text {
+      fill: none;
+    }
+
   </style>
 <body>
 
@@ -220,46 +224,46 @@ TweeView Live Page Demo
       'text-anchor': 'middle',
       class: 'title'
     })
-    .text("Distribution of Sentiment for Last 10K Non-Neutral Tweets");
+    .text("Distribution of Sentiment for Last 500 Non-Neutral Tweets");
 
 // bottom left sentiment line graph
 
-var numRand = 40,
+var numRand = 120,
     randomGen = d3.random.normal(0, 0),
     randData = d3.range(numRand).map(randomGen);
 
 var sentLineXScale = d3.scale.linear()
     .domain([0, numRand-1])
-    .range([0, maxw(0)]);
+    .range([0, maxw(0)+pwidth]);
 
 var sentLineYScale = d3.scale.linear()
     .domain([-1, 1])
-    .range([maxh(0), minh(0)]);
+    .range([maxh(0)/2, minh(0)/2]);
 
 var sentLine = d3.svg.line()
     .x(function(d, i) { return sentLineXScale(i); })
     .y(function(d, i) { return sentLineYScale(d); });
 
 var sentLineSvg = d3.select("#sentimentLine").append("svg")
-    .attr("width", pwidth)
-    .attr("height", pheight)
+    .attr("width", 2*pwidth)
+    .attr("height", pheight / 2)
   .append("g")
-    .attr("transform", "translate(" + minw(0) + "," + minh(0) + ")");
+    .attr("transform", "translate(" + minw(0) + "," + minh(0)/2 + ")");
 
 sentLineSvg.append("defs").append("clipPath") // clipping path
     .attr("id", "clip")
   .append("rect")
-    .attr("width", pwidth - 2 * xcushion)
-    .attr("height", pheight - 2 * ycushion);
+    .attr("width", 2*pwidth - 2 * xcushion)
+    .attr("height", pheight/2 - ycushion);
 
 sentLineSvg.append("g") // x axis
-    .attr("id", "axisSl")
+    .attr("id", "xAxisSl")
     .attr('class','axis')
     .attr("transform", "translate(0," + sentLineYScale(0) + ")")
     .call(d3.svg.axis().scale(sentLineXScale).orient("bottom"));
 
 sentLineSvg.append("g") // y axis
-    .attr("id", "axisSl")
+    .attr("id", "yAxisSl")
     .attr('class','axis')
     .call(d3.svg.axis().scale(sentLineYScale).orient("left"));
 
@@ -272,7 +276,7 @@ var sentLinePath = sentLineSvg.append("g")
 
  sentLineSvg.append("text")
     .attr({
-      x: pwidth / 2, 
+      x: pwidth, 
       y: minh(0) * .4,
       'text-anchor': 'middle',
       class: 'title'
@@ -490,6 +494,7 @@ function refreshCharts() {
 
         var sentHistYAxis = d3.svg.axis()
             .scale(sentHistYScale)
+            .ticks(6)
             .orient("right");
 
         var sentHistBars = sentHistSvg.selectAll('rect.barSh')
@@ -541,7 +546,7 @@ function refreshCharts() {
         d3.select('#xAxisSh')
           .remove();
 
-        d3.select('#yAxisSh')
+        d3.select('#yAxisSh') 
           .remove();
 
         sentHistSvg.append("g")
