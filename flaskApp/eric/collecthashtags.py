@@ -2,8 +2,8 @@ from flask import Flask, render_template, request
 import tweepy 
 from vaderSentiment.vaderSentiment import sentiment
 from collections import defaultdict 
-from time import sleep 
-import json 
+import json
+import time 
 import re
 
 # app = Flask(__name__)
@@ -26,8 +26,7 @@ hashtag_re = re.compile(r'#\w\w+')
 # data
 hashtags = {}
 total_count = {"ct": 0}
-global_sentiment = list()
-recent_sentiment = list()
+start = time.time()
 
 class MyStreamListener(tweepy.StreamListener):
 
@@ -42,33 +41,21 @@ class MyStreamListener(tweepy.StreamListener):
 		score = sentiment(tweet)
 		total_count['ct'] += 1
 
-		# try:
-
 		for m in match:
-			# m = m[1:]# strip hash
 			try:
 				hashtags[m]["count"] += 1
 				hashtags[m]["sentiment"] = ( ( hashtags[m]["sentiment"] * (hashtags[m]["count"] - 1)) + score["compound"] ) / hashtags[m]["count"]
-				# hashtags[m]["sentiment"]["pos"] += score["pos"]
-				# hashtags[m]["sentiment"]["neg"] += score["neg"]
 			except KeyError:
 				hashtags[m] = {"count": 1, "sentiment": score['compound'] }
-				# hashtags[m] = {"count": 1, "sentiment": {"pos": score['pos'], "neg":score['neg']} }
 
-		if abs(score["compound"]) > 0.0:
-			if len(global_sentiment) > 500: global_sentiment.pop(0)
-			global_sentiment.append(score["compound"])
-			recent_sentiment.append(score["compound"])
-
-		if len(hashtags) > 10:
-			with open("doop.txt", 'w') as file_out:
+		if total_count['ct'] > 7500:
+			with open("hashtag_files/hashtags.json", 'w') as file_out:
 				print("dumping hashtags")
+				finish = time.time()
+				total_time = finish - start
+				print "Total time taken: " +  str(total_time)
 				json.dump(hashtags, file_out)
 			return False
-
-		# except Exception as e:
-		# 	print e
-		# 	pass
 
 
 	def on_error(self, status_code):
@@ -89,10 +76,9 @@ def startStream():
 
 	api = tweepy.API(auth)
 
+	start = time.time()
 	myStream = tweepy.Stream(auth=api.auth, listener=MyStreamListener())
 
-	# Non-blocking 
-	# myStream.filter(languages=["en"], track=['apple', 'microsoft', 'google', 'sanders','clinton','trump','debate'], async=True)
 	myStream.sample(async=True)
 
 print("starting stream")
@@ -101,8 +87,4 @@ startStream()
 
 print("finishing stream")
 
-# if __name__ == '__main__':
-
-# 	app.debug = True
-# 	app.run()
 
