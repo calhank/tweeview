@@ -4,6 +4,8 @@ from vaderSentiment.vaderSentiment import sentiment
 from collections import defaultdict 
 import json
 import time 
+import datetime as dt
+import math
 import re
 
 # app = Flask(__name__)
@@ -36,6 +38,9 @@ class MyStreamListener(tweepy.StreamListener):
 
 		""" Append sentiment values of each tweet to a size-limited array. """
 
+		# time.sleep(0.2)
+
+		# try:
 		tweet = status.text.encode('utf-8')
 		match = hashtag_re.findall(tweet)
 		score = sentiment(tweet)
@@ -43,19 +48,29 @@ class MyStreamListener(tweepy.StreamListener):
 
 		for m in match:
 			try:
+				oldcount = hashtags[m]["count"]
 				hashtags[m]["count"] += 1
 				hashtags[m]["sentiment"] = ( ( hashtags[m]["sentiment"] * (hashtags[m]["count"] - 1)) + score["compound"] ) / hashtags[m]["count"]
+				oldvar = hashtags[m]["sentstd"] ** 2
+				newvar = (oldcount * oldvar + (score["compound"] - hashtags[m]["sentiment"]) ** 2) / (oldcount + 1)
+				hashtags[m]["sentstd"] = math.sqrt(newvar)
 			except KeyError:
-				hashtags[m] = {"count": 1, "sentiment": score['compound'] }
+				hashtags[m] = {"count": 1, "sentiment": score['compound'], "sentstd": 0.0}
 
-		if total_count['ct'] > 7500:
+		
+		for h in hashtags:
+			hashtags[h]['date'] = str(dt.date.today())
+
+		if total_count['ct'] > 30000:
+			print "dumping hashtags"
 			with open("hashtag_files/hashtags.json", 'w') as file_out:
-				print("dumping hashtags")
 				finish = time.time()
 				total_time = finish - start
 				print "Total time taken: " +  str(total_time)
 				json.dump(hashtags, file_out)
 			return False
+		# except ProtocolError:
+		# 	pass
 
 
 	def on_error(self, status_code):
@@ -85,6 +100,5 @@ print("starting stream")
 
 startStream()
 
-print("finishing stream")
 
 
