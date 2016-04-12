@@ -10,9 +10,8 @@ import datetime as dt
 with open("hashtag_files/hashtags.json", 'r') as file_in:
 	js = json.loads(file_in.read())
 	file_out = csv.writer(open("hashtag_files/hashtags.csv", 'a'))
-	file_out.writerow(["hashtag", "count", "sentiment", "date"])
 	for hashtag in js:
-		file_out.writerow([hashtag, js[hashtag]['count'], js[hashtag]['sentiment'], str(dt.date.today())])
+		file_out.writerow([hashtag, js[hashtag]['count'], js[hashtag]['sentiment'], js[hashtag]['sentstd'], js[hashtag]['date']])
 
 
 
