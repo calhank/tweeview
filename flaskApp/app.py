@@ -104,11 +104,11 @@ def startStream(filters=None, coordinates=None):
 def renderHomepage():
 	return render_template("homepage.html")
 
-@app.route("/live", methods=["GET"])
-def renderLiveOptions():
-	return render_template("live-options.html")
+@app.route("/live-visuals", methods=["GET"])
+def renderLiveVisuals():
+	return render_template("live-visuals.html")
 
-@app.route("/static", methods=["GET"])
+@app.route("/tableau", methods=["GET"])
 def renderTableau():
 	return render_template("tableau.html") 
 
