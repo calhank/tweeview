@@ -1,0 +1,78 @@
+<!doctype html>
+<html class="no-js" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Foundation</title>
+    <!-- Jinja2 Templating -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/app.css') }}">
+    <script src="{{ url_for('static', filename='bower_components/modernizr/modernizr.js') }}"></script>
+</head>
+
+<body>
+    <!-- Title -->
+    <div class="row">
+        <div class="large-12 columns">
+            <div class="panel">
+                <div class="row">
+                    <div class="large-8 columns">
+                        <h2>Live Visualization Page</h2>
+                    </div>
+                    <div class="large-4 columns">
+                        <h2 style="text-align:right;"><a href="{{ url_for('renderHomepage')}}">Home</a></h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Placeholder -->
+    <div class="row">
+        <div class="large-8 columns">
+            <p><img src="http://lorempixel.com/600/400/cats/3" alt=""></p>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="large-4 columns">
+            <div class="panel">
+                <h3>Tweet Filters</h3>
+                <ul>
+                    <li>
+                        <p>Option 1</p>
+                        <a href="" class="button radius">Filter Option 1</a>
+                    </li>
+                    <li>
+                        <p>Option 2</p>
+                        <a href="" class="button radius">Filter Option 2</a>
+                    </li>
+                    <li>
+                        <p>Option 3</p>
+                        <a href="" class="button radius">Filter Option 3</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <hr/>
+    <br>
+
+    <!-- Row 2 --> 
+    <div class="row">
+      <div class="large-6 columns">
+        <p><img src="http://lorempixel.com/400/400/cats/4" alt=""></p>
+      </div>
+      <div class="large-6 columns">
+        <p><img src="http://lorempixel.com/400/400/cats/5" alt=""></p>
+      </div>
+    </div>
+
+    <!-- Miscellaneous JavaScript -->
+    <script src="{{ url_for('static', filename='bower_components/jquery/dist/jquery.min.js')}}"></script>
+    <script src="{{ url_for('static', filename='bower_components/foundation/js/foundation.min.js')}}"></script>
+    <script src="{{ url_for('static', filename='js/app.js')}}"></script>
+    <script type="text/javascript" src="https://public.tableau.com/javascripts/api/tableau-2.js"></script>
+</body>
+
+</html>
