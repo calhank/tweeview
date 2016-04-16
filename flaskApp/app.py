@@ -100,6 +100,7 @@ def startStream(filters=None, coordinates=None):
 	else:
 		myStream.filter(track=filters, async=True)
 
+
 @app.route("/", methods=["GET"])
 def renderHomepage():
 	return render_template("homepage.html")
@@ -110,7 +111,7 @@ def renderLiveOptions():
 
 @app.route("/static", methods=["GET"])
 def renderTableau():
-	return render_template("tableau.html") 
+	return render_template("tableau.html")
 
 @app.route('/live/view', methods=['GET', 'POST'])
 def renderGraph(): 
@@ -160,5 +161,4 @@ if __name__ == '__main__':
 
 	app.debug = True
 	app.run()
-	# startStream()
 
