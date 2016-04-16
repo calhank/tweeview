@@ -483,4 +483,5 @@ footer .footer-below {
 .col-centered{
     float: none;
     margin: 0 auto;
+    margin-left: 4em;
 }
