@@ -24,20 +24,22 @@
         <div class="medium-6 large-8 columns">
             <!-- Dashboard Links -->
             <div class="row">
-                <div class="small-6 medium-4 large-4 columns">
-                    <p><img src="http://lorempixel.com/200/200/cats/1" alt=""></p>
+                <div class="small-6 medium-6 large-6 columns">
+                    <!-- <p><img src="http://lorempixel.com/200/200/cats/1" alt=""></p> -->
+                    <p><img src="https://thisisyourbrainonblogs.files.wordpress.com/2012/11/bubblechart.png?w=628&h=320" alt=""></p>
                 </div>
-                <div class="small-6 medium-8 large-8 columns">
-                    <h5>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Delectus impedit, qui quo, repellendus adipisci exercitationem?</h5>
+                <div class="small-6 medium-6 large-6 columns">
+                    <h5>Live Visualization Page</h5>
                     <p><a href="{{ url_for('renderLiveVisuals')}}" class="button radius">View &raquo;</a></p>
                 </div>
             </div>
             <div class="row">
-                <div class="small-6 medium-4 large-4 columns">
-                    <p><img src="http://lorempixel.com/200/200/cats/2" alt=""></p>
+                <div class="small-6 medium-6 large-6 columns">
+                    <!-- <p><img src="http://lorempixel.com/200/200/cats/2" alt=""></p> -->
+                    <p><img src="http://www.excella.com/wp-content/uploads/2015/02/Data-Vector.jpg" alt=""></p>
                 </div>
-                <div class="small-6 medium-8 large-8 columns">
-                    <h5>Amet neque totam sit similique dicta ut maxime! Accusamus ex, repellendus a assumenda molestias eligendi!</h5>
+                <div class="small-6 medium-6 large-6 columns">
+                    <h5>Tableau Worksheets</h5>
                     <p><a href="{{ url_for('renderTableau')}}" class="button radius">View &raquo;</a></p>
                 </div>
             </div>
@@ -54,6 +56,21 @@
             </div>
         </div>
     </div>
+
+
+  <h1>Flaskr</h1>
+  <div class=metanav>
+  {% if not session.logged_in %}
+    <a href="{{ url_for('login') }}">log in</a>
+  {% else %}
+    <a href="{{ url_for('logout') }}">log out</a>
+  {% endif %}
+  </div>
+  {% for message in get_flashed_messages() %}
+    <div class=flash>{{ message }}</div>
+  {% endfor %}
+
+    
     <!-- Miscellaneous JavaScript -->
     <script src="{{ url_for('static', filename='bower_components/jquery/dist/jquery.min.js')}}"></script>
     <script src="{{ url_for('static', filename='bower_components/foundation/js/foundation.min.js')}}"></script>

@@ -1,4 +1,9 @@
-from flask import Flask, render_template, request 
+# Flask imports 
+import sqlite3
+from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash
+from contextlib import closing
+
+# Miscellaneous imports 
 import tweepy 
 from vaderSentiment.vaderSentiment import sentiment
 from collections import defaultdict 
@@ -7,12 +12,17 @@ import json
 import re
 import pprint
 
-pp = pprint.PrettyPrinter(indent=1).pprint
+# configuration
+DATABASE = '/tmp/flaskApp.db'
+DEBUG = True
+SECRET_KEY = 'daa1306d061b233fcdf244f2974efcbbe67d47238d105c0af968e380'
+USERNAME = 'admin'
+PASSWORD = 'default'
 
 app = Flask(__name__)
 app.config.from_object(__name__)
 
-
+# Tweepy 
 keys = {
 	
 	'consumer_key': 'U2UbUq8DX2WlbfbR9m3nY0tcW'
@@ -21,6 +31,42 @@ keys = {
 	, 'access_token_secret': 'H8DSy6MrLmMNnqk9IJh4JiTuk0XsDAmTfNgwmcb9OuQvk'
 
 }
+
+def connect_db():
+
+	""" Connects to a specific database. """
+
+	return sqlite3.connect(app.config['DATABASE'])
+
+
+def init_db():
+
+	""" Initializes the database. """
+
+	with closing(connect_db()) as db:
+		with app.open_resource('schema.sql', mode='r') as f:
+			db.cursor().executescript(f.read())
+		db.commit()
+
+
+@app.before_request
+def before_request():
+
+	""" Opens a connection prior to the request being made. """
+
+	g.db = connect_db()
+
+
+@app.teardown_request
+def teardown_request(exception):
+
+	""" Closes the connection after the request has finished. """
+
+	db = getattr(g, 'db', None)
+	if db is not None:
+		db.close()        
+
+
 
 # regex
 hashtag_re = re.compile(r'#\w\w+')
@@ -31,6 +77,10 @@ hashtag_re = re.compile(r'#\w\w+')
 # total_count = {"ct": 0}
 # global_sentiment = list()
 # recent_sentiment = list()
+
+pp = pprint.PrettyPrinter(indent=1).pprint
+
+
 
 class MyStreamListener(tweepy.StreamListener):
 
@@ -103,11 +153,73 @@ def startStream(filters=None, coordinates=None):
 
 @app.route("/", methods=["GET"])
 def renderHomepage():
-	return render_template("homepage.html")
+	return render_template("index.html")
 
-@app.route("/live-visuals", methods=["GET"])
+# @app.route("/live-visuals", methods=["GET"])
+# def renderLiveVisuals():
+# 	return render_template("live-visuals.html")
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+
+	""" This function tracks the login of the user. """
+
+	error = None
+	if request.method == 'POST':
+
+		if request.form['username'] != app.config['USERNAME']:
+			error = 'Invalid username'
+		
+		elif request.form['password'] != app.config['PASSWORD']:
+			error = 'Invalid password'
+		else:
+			session['logged_in'] = True
+			flash('You were logged in')
+			return redirect(url_for('renderHomepage'))
+
+	return render_template('login.html', error=error)
+
+
+@app.route('/logout')
+def logout():
+
+	""" This function logs the user out. """
+
+	session.pop('logged_in', None)
+	flash('You were logged out')
+	return redirect(url_for('renderHomepage'))
+
+
+@app.route('/live-visuals', methods=["GET"])
 def renderLiveVisuals():
-	return render_template("live-visuals.html")
+
+	""" This function renders the live-visualization page and pulls 
+	 all of the filters from the database. """
+	
+	# Collect 
+	cur = g.db.execute('select tag from entries order by id desc')
+	entries = [dict(tag=row[0]) for row in cur.fetchall()]
+
+	# Emit 
+	return render_template('live-visuals.html', entries=entries)
+
+@app.route('/add', methods=['POST'])
+def add_entry():
+
+	""" This function inserts new tags for filtering. """
+
+	if not session.get('logged_in'):
+		abort(401)
+
+	g.db.execute('insert into entries (tag) values (?)', 
+		[request.form['tag']])
+
+	g.db.commit()
+	flash('New entry was successfully posted')
+
+	return redirect(url_for('renderLiveVisuals'))
+
 
 @app.route("/tableau", methods=["GET"])
 def renderTableau():
@@ -159,6 +271,6 @@ def renderGraph():
 
 if __name__ == '__main__':
 
-	app.debug = True
+	init_db()
 	app.run()
 
