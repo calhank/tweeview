@@ -128,6 +128,7 @@
                         <button id="filterButton">Filter</button>
                     </div>
 
+                    <button id="stopButton" style="display:none;">Pause Updates</button>
                     <div id="streamOutput" style="display:none;"></div>
                     <div id="stockChartContainer" style="display:none"></div>
 
@@ -328,8 +329,12 @@
         $( document ).ready(function() {
                 // console.log( "ready!" );
 
-            $("#stopButton").on('click', function(){
+            var refreshLoop;
 
+            $("#stopButton").on('click', function(){
+                $(this).css("display","none");
+                clearInterval(refreshLoop);
+                $("#streamChoice").css("display","block");
             });
 
             // Methods to start stream 
@@ -338,7 +343,8 @@
                 $.post("/start-sample-stream", function(value){
                     console.log("Start stream: " + JSON.parse(value) );
                 });
-                $("#streamChoice").remove();
+                $("#streamChoice").css("display","none");
+                $("#stopButton").css("display","block");
                 $("#streamOutput").css("display","block");
                 $("#stockChartContainer").css("display","block");
 
@@ -378,7 +384,7 @@
                                 console.log(series);
 
                                 // Load/Refresh/Render stream data
-                                var refreshLoop = setInterval(function () {
+                                refreshLoop = setInterval(function () {
                                     $.post('/get-data', function(value) {
                                         var raw_data = JSON.parse(value);
                                         var globalSentiment = raw_data[0];

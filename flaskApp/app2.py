@@ -102,27 +102,6 @@ class MyStreamListener(tweepy.StreamListener):
 		global_sentiment.append((now,score["compound"]))
 		total_count['ct'] += 1
 
-		# try:
-
-		# for m in match:
-		# 	# m = m[1:]# strip hash
-		# 	try:
-		# 		hashtags[m]["count"] += 1
-		# 		hashtags[m]["sentiment"] = ( ( hashtags[m]["sentiment"] * (hashtags[m]["count"] - 1)) + score["compound"] ) / hashtags[m]["count"]
-		# 		# hashtags[m]["sentiment"]["pos"] += score["pos"]
-		# 		# hashtags[m]["sentiment"]["neg"] += score["neg"]
-		# 	except KeyError:
-		# 		hashtags[m] = {"count": 1, "sentiment": score['compound'] }
-		# 		# hashtags[m] = {"count": 1, "sentiment": {"pos": score['pos'], "neg":score['neg']} }
-
-		# if abs(score["compound"]) > 0.0:
-		# 	if len(global_sentiment) > 500: global_sentiment.pop(0)
-		# 	global_sentiment.append(score["compound"])
-		# 	recent_sentiment.append(score["compound"])
-
-		# except Exception as e:
-		# 	print e
-		# 	pass
 
 
 	def on_error(self, status_code):
@@ -146,9 +125,9 @@ def startStream(filters=None, coordinates=None):
 	myStream = tweepy.Stream(auth=api.auth, listener=MyStreamListener())
 
 	if filters is None:
-		myStream.sample(async=True)
+		myStream.sample(async=True, languages=["en"])
 	else:
-		myStream.filter(track=filters, async=True)
+		myStream.filter(track=filters, async=True, languages=["en"])
 
 	# return json.dumps(True)
 @app.route("/start-sample-stream", methods=["POST"])
@@ -169,28 +148,18 @@ def connectToStream():
 def renderHomepage():
 	return render_template("index2.html")
 
-# def startSampleStream():
-# 	startStream()
-# 	return
 
 
 @app.route("/get-data", methods=["POST"])
 def getStreamData():
-	print "Getting data from stream"
+	print "Getting data from active stream"
 	
 	global total_count
 	global global_sentiment
 	# global recent_sentiment
 
 	return json.dumps([global_sentiment, total_count["ct"]])
-	
 
-
-	# return render_template("index2.html")
-
-# @app.route("/live-visuals", methods=["GET"])
-# def renderLiveVisuals():
-# 	return render_template("live-visuals.html")
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -284,17 +253,8 @@ def renderGraph():
 
 	elif request.method == 'POST':
 
-		sleep(.25)
-
 		return json.dumps([global_sentiment, total_count["ct"]])
-		# sleep(.5)
 
-		# taglist = [ {"tag": key, "count": hashtags[key]["count"], "sentiment":hashtags[key]["sentiment"] } for key in list(hashtags.keys()) if hashtags[key]["count"] > 1 ]
-		# top20hashtags = sorted(taglist, key=lambda x: x["count"], reverse=True)[:20]		
-		# unique_count = len(hashtags)
-		# rs = sum(recent_sentiment)/len(recent_sentiment) if len(recent_sentiment) > 0 else 0
-		# recent_sentiment = recent_sentiment[:10]
-		# return json.dumps([top20hashtags, global_sentiment, total_count['ct'], unique_count, rs])
 
 
 	else: 
