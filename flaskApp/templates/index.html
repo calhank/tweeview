@@ -18,7 +18,6 @@
     <link href="{{ url_for('static', filename='css/freelancer.css') }}" rel="stylesheet">
 
     <!-- Custom Fonts -->
-    <!-- <link href="{{ url_for('static', filename='font-awesome/css/font-awesome.min.css') }}" rel="stylesheet" type="text/css"> -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
     <link href="http://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css">
     <link href="http://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic" rel="stylesheet" type="text/css">
@@ -48,8 +47,6 @@
                 <a class="navbar-brand" href="#page-top">TweeView - Visualizing Twitter</a>
             </div>
 
-
-
             <!-- Collect the nav links, forms, and other content for toggling -->
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav navbar-right">
@@ -66,31 +63,6 @@
                         <a href="#contact">Contact</a>
                     </li>
 
-                    <!-- Login --> 
-                    <li class="dropdown">
-                      <a href="#" class="dropdown-toggle" data-toggle="dropdown"><b>Login</b> <span class="caret"></span></a>
-                        <ul id="login-dp" class="dropdown-menu">
-                            <li>
-                                 <div class="row">
-                                        <div class="col-md-12">
-                                             <form class="form" role="form" method="post" action="login" accept-charset="UTF-8" id="login-nav">
-                                                    <div class="form-group">
-                                                         <label class="sr-only" for="Username">Username</label>
-                                                         <input type="text" class="form-control" id="Username" placeholder="Username" required>
-                                                    </div>
-                                                    <div class="form-group">
-                                                         <label class="sr-only" for="exampleInputPassword2">Password</label>
-                                                         <input type="password" class="form-control" id="exampleInputPassword2" placeholder="Password" required>
-                                                    </div>
-                                                    <div class="form-group">
-                                                         <button type="submit" class="btn btn-primary btn-block">Sign in</button>
-                                                    </div>
-                                             </form>
-                                        </div>
-                                 </div>
-                            </li>
-                        </ul>
-                    </li>
                 </ul>
             </div>
             <!-- /.navbar-collapse -->
@@ -122,6 +94,24 @@
                 <div class="col-lg-12 text-center">
                     <h2>Sentiment - Live</h2>
                     <hr class="star-primary">
+
+                    <div id="streamChoice">
+                        
+                        <div class="col-lg-4 col-lg-offset-2">
+                            <button id="sampleButton" class="btn btn-primary">Sample</button>    
+                            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Sunt accusantium, eaque dolore et nulla alias.</p>
+                        </div>
+                        <div class="col-lg-4">
+                            <button id="filterButton" class="btn btn-primary">Filter</button>    
+                            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quam beatae iste, officiis sed excepturi mollitia.</p>
+                        </div>                        
+                        
+                    </div>
+
+                    <button id="stopButton" style="display:none;" class="btn btn-primary">Pause Updates</button>
+                    <div id="streamOutput" style="display:none;"></div>
+                    <div id="stockChartContainer" style="display:none"></div>
+
                 </div>
             </div>
 
@@ -264,7 +254,7 @@
     <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script>
     <script src="{{ url_for('static', filename='js/classie.js') }}"></script>
     <script src="{{ url_for('static', filename='js/cbpAnimatedHeader.js') }}"></script>
-
+    <script src="https://code.highcharts.com/stock/highstock.js"></script>
     <!-- Contact Form JavaScript -->
     <script src="{{ url_for('static', filename='js/jqBootstrapValidation.js') }}"></script>
     <script src="{{ url_for('static', filename='js/contact_me.js') }}"></script>
@@ -275,6 +265,139 @@
     <!-- Tableau JavaScript --> 
     <script type='text/javascript' src='https://public.tableau.com/javascripts/api/viz_v1.js'></script>
      <script type="text/javascript" src="https://public.tableau.com/javascripts/api/tableau-2.js"></script>
+
+
+     <script type='text/javascript'>
+
+        var sentimentTimestampToDate = function(ts){
+            var date = new Date(ts[0] * 1000);
+            return [date, ts[1]];
+        };
+
+        $( document ).ready(function() {
+                // console.log( "ready!" );
+
+            // Methods to start stream 
+            $("#sampleButton").on("click", function(_){
+                console.log("clicked sampleButton");
+                $.post("/start-sample-stream", function(value){
+                    console.log("Start stream: " + JSON.parse(value) );
+                });
+                // $("#streamChoice").remove();
+                $("#streamChoice").remove();
+                
+                $("#streamOutput").css("display","block");
+                $("#stockChartContainer").css("display","block");
+
+                // $("#streamOutput").show(300);
+
+
+
+                // // Load/Refresh/Render stream data
+                // setInterval(function () {
+                //     $.post('/get-data', function(value) {
+                //         var raw_data = JSON.parse(value);
+                //         var globalSentiment = raw_data[0];
+                //         // var final = globalSentiment.map(sentimentTimestampToDate);
+
+                //         console.log(raw_data[1]);
+                //         $("#streamOutput").text(raw_data[1]);
+
+
+                //         // series.setData(final);
+                //     });
+
+                // }, 1000);
+
+
+                // Chart!
+                Highcharts.setOptions({
+                    global: {
+                        useUTC: false
+                    }
+                });
+
+                // Create the chart
+                $('#stockChartContainer').highcharts('StockChart', {
+                    chart : {
+                        events : {
+                            load : function () {
+
+                                // set up the updating of the chart each second
+                                var series = this.series[0];
+                                console.log(series);
+
+                                // Load/Refresh/Render stream data
+                                setInterval(function () {
+                                    $.post('/get-data', function(value) {
+                                        var raw_data = JSON.parse(value);
+                                        var globalSentiment = raw_data[0];
+                                        var final = globalSentiment.map(sentimentTimestampToDate);
+
+                                        console.log(raw_data[1]);
+                                        // $("#streamOutput").text(raw_data[1]);
+
+
+                                        series.setData(final);
+                                    });
+
+                                }, 1000);
+
+
+                            }
+                        }
+                    },
+
+                    rangeSelector: {
+                        buttons: [{
+                            count: 1,
+                            type: 'minute',
+                            text: '1M'
+                        }, {
+                            count: 5,
+                            type: 'minute',
+                            text: '5M'
+                        }, {
+                            type: 'all',
+                            text: 'All'
+                        }],
+                        inputEnabled: false,
+                        selected: 0
+                    },
+
+                    title : {
+                        text : 'Live random data'
+                    },
+
+                    exporting: {
+                        enabled: false
+                    },
+
+                    series : [{
+                        name : 'Random data',
+                        data : (function () {
+                            // generate an array of random data
+                            var data = [], time = (new Date()).getTime(), i;
+
+                            for (i = -999; i <= 0; i += 1) {
+                                data.push([
+                                    time + i * 1000,
+                                    Math.round(Math.random() * 100)
+                                ]);
+                            }
+                            return data;
+                        }())
+                    }]
+                });
+
+
+                
+            });
+
+        });
+
+     </script>
+
 </body>
 
 </html>

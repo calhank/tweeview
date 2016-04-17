@@ -48,8 +48,6 @@
                 <a class="navbar-brand" href="#page-top">TweeView - Visualizing Twitter</a>
             </div>
 
-
-
             <!-- Collect the nav links, forms, and other content for toggling -->
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav navbar-right">
@@ -66,31 +64,6 @@
                         <a href="#contact">Contact</a>
                     </li>
 
-                    <!-- Login --> 
-                    <li class="dropdown">
-                      <a href="#" class="dropdown-toggle" data-toggle="dropdown"><b>Login</b> <span class="caret"></span></a>
-                        <ul id="login-dp" class="dropdown-menu">
-                            <li>
-                                 <div class="row">
-                                        <div class="col-md-12">
-                                             <form class="form" role="form" method="post" action="login" accept-charset="UTF-8" id="login-nav">
-                                                    <div class="form-group">
-                                                         <label class="sr-only" for="Username">Username</label>
-                                                         <input type="text" class="form-control" id="Username" placeholder="Username" required>
-                                                    </div>
-                                                    <div class="form-group">
-                                                         <label class="sr-only" for="exampleInputPassword2">Password</label>
-                                                         <input type="password" class="form-control" id="exampleInputPassword2" placeholder="Password" required>
-                                                    </div>
-                                                    <div class="form-group">
-                                                         <button type="submit" class="btn btn-primary btn-block">Sign in</button>
-                                                    </div>
-                                             </form>
-                                        </div>
-                                 </div>
-                            </li>
-                        </ul>
-                    </li>
                 </ul>
             </div>
             <!-- /.navbar-collapse -->
@@ -124,11 +97,19 @@
                     <hr class="star-primary">
 
                     <div id="streamChoice">
-                        <button id="sampleButton">Sample</button>
-                        <button id="filterButton">Filter</button>
+                        
+                        <div class="col-lg-4 col-lg-offset-2">
+                            <button id="sampleButton" class="btn btn-primary">Sample</button>    
+                            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Sunt accusantium, eaque dolore et nulla alias.</p>
+                        </div>
+                        <div class="col-lg-4">
+                            <button id="filterButton" class="btn btn-primary">Filter</button>    
+                            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quam beatae iste, officiis sed excepturi mollitia.</p>
+                        </div>                        
+                        
                     </div>
 
-                    <button id="stopButton" style="display:none;">Pause Updates</button>
+                    <button id="stopButton" style="display:none;" class="btn btn-primary">Pause Updates</button>
                     <div id="streamOutput" style="display:none;"></div>
                     <div id="stockChartContainer" style="display:none"></div>
 
@@ -256,13 +237,6 @@
             </div>
         </div>
     </footer>
-
-    <!-- Scroll to Top Button (Only visible on small and extra-small screen sizes) -->
-    <div class="scroll-top page-scroll visible-xs visible-sm">
-        <a class="btn btn-primary" href="#page-top">
-            <i class="fa fa-chevron-up"></i>
-        </a>
-    </div>
 
     <!-- jQuery -->
     <script src="{{ url_for('static', filename='js/jquery.js') }}"></script>
@@ -426,7 +400,7 @@
                     },
 
                     title : {
-                        text : 'Live random data'
+                        text : 'Live Sentiment Data'
                     },
 
                     exporting: {

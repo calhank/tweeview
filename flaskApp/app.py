@@ -12,13 +12,6 @@ import json
 import re
 import pprint
 
-# configuration
-DATABASE = '/tmp/flaskApp.db'
-DEBUG = True
-SECRET_KEY = 'daa1306d061b233fcdf244f2974efcbbe67d47238d105c0af968e380'
-USERNAME = 'admin'
-PASSWORD = 'default'
-
 app = Flask(__name__)
 app.config.from_object(__name__)
 
@@ -31,41 +24,6 @@ keys = {
 	, 'access_token_secret': 'H8DSy6MrLmMNnqk9IJh4JiTuk0XsDAmTfNgwmcb9OuQvk'
 
 }
-
-def connect_db():
-
-	""" Connects to a specific database. """
-
-	return sqlite3.connect(app.config['DATABASE'])
-
-
-def init_db():
-
-	""" Initializes the database. """
-
-	with closing(connect_db()) as db:
-		with app.open_resource('schema.sql', mode='r') as f:
-			db.cursor().executescript(f.read())
-		db.commit()
-
-
-@app.before_request
-def before_request():
-
-	""" Opens a connection prior to the request being made. """
-
-	g.db = connect_db()
-
-
-@app.teardown_request
-def teardown_request(exception):
-
-	""" Closes the connection after the request has finished. """
-
-	db = getattr(g, 'db', None)
-	if db is not None:
-		db.close()        
-
 
 
 # regex
@@ -155,75 +113,6 @@ def startStream(filters=None, coordinates=None):
 def renderHomepage():
 	return render_template("index.html")
 
-# @app.route("/live-visuals", methods=["GET"])
-# def renderLiveVisuals():
-# 	return render_template("live-visuals.html")
-
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-
-	""" This function tracks the login of the user. """
-
-	error = None
-	if request.method == 'POST':
-
-		if request.form['username'] != app.config['USERNAME']:
-			error = 'Invalid username'
-		
-		elif request.form['password'] != app.config['PASSWORD']:
-			error = 'Invalid password'
-		else:
-			session['logged_in'] = True
-			flash('You were logged in')
-			return redirect(url_for('renderHomepage'))
-
-	return render_template('login.html', error=error)
-
-
-@app.route('/logout')
-def logout():
-
-	""" This function logs the user out. """
-
-	session.pop('logged_in', None)
-	flash('You were logged out')
-	return redirect(url_for('renderHomepage'))
-
-
-@app.route('/live-visuals', methods=["GET"])
-def renderLiveVisuals():
-
-	""" This function renders the live-visualization page and pulls 
-	 all of the filters from the database. """
-	
-	# Collect 
-	cur = g.db.execute('select tag from entries order by id desc')
-	entries = [dict(tag=row[0]) for row in cur.fetchall()]
-
-	# Emit 
-	return render_template('live-visuals.html', entries=entries)
-
-@app.route('/add', methods=['POST'])
-def add_entry():
-
-	""" This function inserts new tags for filtering. """
-
-	if not session.get('logged_in'):
-		abort(401)
-
-	g.db.execute('insert into entries (tag) values (?)', 
-		[request.form['tag']])
-
-	g.db.commit()
-	flash('New entry was successfully posted')
-
-	return redirect(url_for('renderLiveVisuals'))
-
-
-@app.route("/tableau", methods=["GET"])
-def renderTableau():
-	return render_template("tableau.html")
 
 @app.route('/live/view', methods=['GET', 'POST'])
 def renderGraph(): 
@@ -271,6 +160,5 @@ def renderGraph():
 
 if __name__ == '__main__':
 
-	init_db()
 	app.run()
 
