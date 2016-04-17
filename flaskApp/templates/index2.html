@@ -288,13 +288,49 @@
 
      <script type='text/javascript'>
 
-        var sentimentTimestampToDate = function(ts){
-            var date = new Date(ts[0] * 1000);
-            return [date, ts[1]];
+        var timestampToDate = function(ts){
+            var date = new Date(parseInt(ts) * 1000);
+            return date;
+        }
+
+        var sentimentTimestampToDate = function(sts){
+            var date = timestampToDate(sts[0]);
+            return [date, sts[1]];
+        };
+
+        var bucketSentimentArray = function(mike_sweeney){
+                
+            var sentimentMap = mike_sweeney
+                .map(function(x){
+                    return [ parseInt(x[0]), x[1] ];
+                })
+                .reduce(function(prev, curr) {
+                if( curr[0] in prev ){
+                    prev[curr[0]].push(curr[1]);
+                } else {
+                    prev[curr[0]] = [curr[1]];
+                }
+                return prev;
+            }, {});
+
+            var sentimentArray = [];
+            for( key in sentimentMap ){
+                obj = sentimentMap[ key ];
+                avg = obj.reduce(function(a,b){ return a + b; }) / obj.length;
+                sentimentArray.push( [key, avg] );
+            }
+
+            console.log(sentimentArray);
+
+            return sentimentArray;
         };
 
         $( document ).ready(function() {
                 // console.log( "ready!" );
+
+            $("#stopButton").on('click', function(){
+
+            });
 
             // Methods to start stream 
             $("#sampleButton").on("click", function(_){
@@ -342,17 +378,21 @@
                                 console.log(series);
 
                                 // Load/Refresh/Render stream data
-                                setInterval(function () {
+                                var refreshLoop = setInterval(function () {
                                     $.post('/get-data', function(value) {
                                         var raw_data = JSON.parse(value);
                                         var globalSentiment = raw_data[0];
                                         var final = globalSentiment.map(sentimentTimestampToDate);
 
                                         console.log(raw_data[1]);
+                                        var buckets = bucketSentimentArray(globalSentiment).map(function(x){
+                                            return [ x[0]*1000, x[1] ];
+                                        });
+                                        console.log(buckets);
+
                                         // $("#streamOutput").text(raw_data[1]);
 
-
-                                        series.setData(final);
+                                        series.setData(buckets);
                                     });
 
                                 }, 1000);
@@ -390,16 +430,8 @@
                     series : [{
                         name : 'Random data',
                         data : (function () {
-                            // generate an array of random data
-                            var data = [], time = (new Date()).getTime(), i;
 
-                            for (i = -999; i <= 0; i += 1) {
-                                data.push([
-                                    time + i * 1000,
-                                    Math.round(Math.random() * 100)
-                                ]);
-                            }
-                            return data;
+                            return [];
                         }())
                     }]
                 });
