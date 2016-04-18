@@ -40,7 +40,12 @@ global_sentiment = list()
 
 pp = pprint.PrettyPrinter(indent=1).pprint
 
-class MyStreamListener(tweepy.StreamListener):
+
+## TWEEPY METHODS AND INITIALIZATION
+
+class TweeviewListener(tweepy.StreamListener):
+	# def __init__(self, api=None):
+	# 	super(TweeviewListener, self).__init__()
 
 	""" Overrides the default streaming settings. """
 
@@ -61,42 +66,50 @@ class MyStreamListener(tweepy.StreamListener):
 		if status_code == '420':
 			return False 
 
+# Twitter authentication 
+auth = tweepy.OAuthHandler(keys['consumer_key'], keys['consumer_secret'])
+auth.set_access_token(keys['access_token'], keys['access_token_secret'])
 
-def startStream(filters=None, coordinates=None): 
+api = tweepy.API(auth)
+STREAM = tweepy.Stream(auth=api.auth, listener=TweeviewListener())
+
+def startStream(filters=None, locations=None): 
 
 	""" This begins the twitter stream. """ 
 
-	# Twitter authentication 
-	auth = tweepy.OAuthHandler(keys['consumer_key'], keys['consumer_secret'])
-	auth.set_access_token(keys['access_token'], keys['access_token_secret'])
-
-	api = tweepy.API(auth)
-
-	myStream = tweepy.Stream(auth=api.auth, listener=MyStreamListener())
-
 	if filters is None:
-		myStream.sample(async=True, languages=["en"])
+		STREAM.sample(async=True, languages=["en"])
 	else:
-		myStream.filter(track=filters, async=True, languages=["en"])
+		STREAM.filter(track=filters, locations=locations, async=True, languages=["en"])
+
+
+## FLASK METHODS
+@app.route("/", methods=["GET"])
+def renderHomepage():
+	return render_template("index.html")
 
 	
 @app.route("/start-stream", methods=["POST"])
-def connectToStream():
+def connectStream():
 	print "Starting Stream"
 	filters = request.args.get('filters')
+	coordinates = request.args.get('coordinates')
 	if filters is not None:
 		filters = filters.split(',')
-		startStream(filters)
-
+		print "Filters:", ",".join(filters)
+		print "Coordinates:", coordinates
+		startStream(filters=filters, coordinates=coordinates)
 	else:
 		startStream()
 
 	return json.dumps(True)
 
 
-@app.route("/", methods=["GET"])
-def renderHomepage():
-	return render_template("index.html")
+@app.route("/stop-stream", methods=["POST"])
+def disconnectStream():
+	print "Stopping Stream"
+	STREAM.disconnect()
+	return json.dumps(True)
 
 
 @app.route("/get-data", methods=["POST"])
@@ -106,27 +119,6 @@ def getStreamData():
 	global global_sentiment
 
 	return json.dumps([global_sentiment, total_count["ct"]])
-
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-
-	""" This function tracks the login of the user. """
-
-	error = None
-	if request.method == 'POST':
-
-		if request.form['username'] != app.config['USERNAME']:
-			error = 'Invalid username'
-		
-		elif request.form['password'] != app.config['PASSWORD']:
-			error = 'Invalid password'
-		else:
-			session['logged_in'] = True
-			flash('You were logged in')
-			return redirect(url_for('renderHomepage'))
-
-	return render_template('login.html', error=error)
 
 
 if __name__ == '__main__':

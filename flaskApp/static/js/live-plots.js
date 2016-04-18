@@ -42,6 +42,9 @@ $( document ).ready(function() {
     $("#stopButton").on('click', function(){
         $(this).css("display","none");
         clearInterval(refreshLoop);
+        $.post("/stop-stream",function(value){
+            console.log(JSON.parse(value));
+        });
         $("#streamChoice").css("display","block");
     });
 
@@ -107,12 +110,22 @@ $( document ).ready(function() {
                 enabled: false
             },
 
-            series : [{
-                name : 'Sentiment Score',
-                tooltip: {
-                    valueDecimals: 3,
+            series : [
+                {
+                    name : 'Sentiment Score',
+                    tooltip: {
+                        valueDecimals: 3,
+                    },
+                    data : (function(){
+                        // generate an array of random data
+                        var data = [], time = (new Date()).getTime(), i;
+                        for (i = -29; i <= 0; i += 1) {
+                            data.push([time + i * 1000, 0]);
+                        }
+                        return data;
+                    }())
                 }
-            }],
+            ],
         });
 
         // set up the updating of the chart each second
