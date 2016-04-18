@@ -16,6 +16,8 @@
 
     <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/freelancer.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/selectize.css') }}" rel="stylesheet">
+
 
     <!-- Custom Fonts -->
     <!-- <link href="{{ url_for('static', filename='font-awesome/css/font-awesome.min.css') }}" rel="stylesheet" type="text/css"> -->
@@ -90,37 +92,80 @@
             <div class="row">
                 <div class="col-lg-12 text-center">
                     <h2>Sentiment - Live</h2>
+                    <hr class="star-primary">
                 </div>
             </div>
 
-            <div class="row">"
-                <div class="col-md-6 text-center">
-                    <hr class="star-primary">
-
-                    <div id="streamChoice">
-                        
+            <div id="streamChoice" class="container">
+                    <div class="col-lg-12 text-center">
                         <div class="col-lg-4 col-lg-offset-2">
-                            <button id="sampleButton" class="btn btn-primary">Sample</button>    
-                            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Sunt accusantium, eaque dolore et nulla alias.</p>
+                            <button id="sampleButton" class="btn btn-primary">Random Sample</button>    
+                            <p>Stream a random sample of 1% of all twitter activity.</p>
                         </div>
                         <div class="col-lg-4">
-                            <button id="filterButton" class="btn btn-primary">Filter</button>    
-                            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quam beatae iste, officiis sed excepturi mollitia.</p>
+                            <button id="filterButton" class="btn btn-primary">Filtered Sample</button>    
+                            <p>Limit stream to specific keywords or geography.</p>
                         </div>                        
-                        
                     </div>
+            </div>
 
-                    <button id="stopButton" style="display:none;" class="btn btn-primary">Pause Updates</button>
-                    <div id="streamOutput" style="display:none;"></div>
-                    <div id="stockChartContainer" style="display:none"></div>
 
+            <div id="controlPanel" class="container" style="display:none">
+                <div class="row">
+                    <div class="col-lg-12 text-center">
+                        <div class="col-md-3 col-md-offset-3 text-center">   
+                            <button id="pauseButton" class="btn btn-warning" style="width:200px;">
+                                <span class="glyphicon glyphicon-pause" aria-hidden="true"></span> Pause Plot Updates
+                            </button>
+                            <button id="playButton" class="btn btn-default" style="display:none;width:200px;" >
+                                <span class="glyphicon glyphicon-play" aria-hidden="true"></span> Resume Plot Updates
+                            </button>
+                        </div>
+                        <div class="col-md-3">   
+                            <button id="stopButton" class="btn btn-danger" style="width:200px;">
+                                <span class="glyphicon glyphicon-stop" aria-hidden="true"></span> Kill Stream
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-6 col-lg-offset-3 text-center">
+
+                        <div class="input-group">
+                          <span class="input-group-addon">Hashtag Filters</span>
+                          <input id="hashtagFilterInput" type="text">
+                          <span class="input-group-btn">
+                            <button id="clearHashtagFilterInput" class="btn btn-danger" style="height:37px;padding: 10% 25%;"><span class="glyphicon glyphicon-remove" aria-hidden="true"></button>
+                          </span>
+                        </div>
+
+                    </div>
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-lg-12 col-centered">
-                    <!-- D3 Live Visualization -->
+            <div id="liveVisuals" class="container" style="display:none;">
+
+                <div id="summaryData" class="row">
+                    <div class="col-lg-12 text-center">
+                        <div id="totalTweets" style="display:none;"></div>
+                    </div>
                 </div>
+
+                <div id="topTweets" class="row">
+                </div>
+
+                <div id="sentimentData" class="row">
+                    <div class="col-md-6">
+                        <div id="sentimentSeriesContainer"></div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-centered">
+                        <!-- D3 Live Visualization -->
+                    </div>
+                </div>
+
             </div>
         </div>
     </section>
@@ -132,7 +177,7 @@
         <div class="container">
             <div class="row">
                 <div class="col-lg-12 text-center">
-                    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Itaque commodi unde obcaecati corporis ratione, numquam!</p>
+                    <!-- <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Itaque commodi unde obcaecati corporis ratione, numquam!</p> -->
                 </div>
             </div>
         </div>
@@ -176,6 +221,9 @@
 
     <!-- jQuery -->
     <script src="{{ url_for('static', filename='js/jquery.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/selectize.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/d3.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/highstock.js') }}"></script>
 
     <!-- Bootstrap Core JavaScript -->
     <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
@@ -184,20 +232,19 @@
     <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script>
     <script src="{{ url_for('static', filename='js/classie.js') }}"></script>
     <script src="{{ url_for('static', filename='js/cbpAnimatedHeader.js') }}"></script>
-    <script src="https://code.highcharts.com/stock/highstock.js"></script>
     <!-- Contact Form JavaScript -->
-    <script src="{{ url_for('static', filename='js/jqBootstrapValidation.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/contact_me.js') }}"></script>
+    <!-- <script src="{{ url_for('static', filename='js/jqBootstrapValidation.js') }}"></script> -->
+    <!-- <script src="{{ url_for('static', filename='js/contact_me.js') }}"></script> -->
 
     <!-- Custom Theme JavaScript -->
     <script src="{{ url_for('static', filename='js/freelancer.js') }}"></script>
 
     <!-- Tableau JavaScript --> 
     <script type='text/javascript' src='https://public.tableau.com/javascripts/api/viz_v1.js'></script>
-     <script type="text/javascript" src="https://public.tableau.com/javascripts/api/tableau-2.js"></script>
+    <script type="text/javascript" src="https://public.tableau.com/javascripts/api/tableau-2.js"></script>
 
 
-     <script type='text/javascript' src="{{ url_for('static', filename='js/live-plots.js') }}"></script>
+    <script type='text/javascript' src="{{ url_for('static', filename='js/live-plots.js') }}"></script>
 
 </body>
 

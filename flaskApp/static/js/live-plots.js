@@ -47,129 +47,192 @@ var movingAverageSentimentArray = function(sentimentArray, lags){
 };
 
 $( document ).ready(function() {
-        console.log( "Page Ready!" );
+    console.log( "Page Ready!" );
 
+    // GLOBAL VARIABLES!    
     var refreshLoop;
-    var sentimentPlot = $('#stockChartContainer');
+    var hashtagFilters;
 
-    $("#stopButton").on('click', function(){
-        $(this).css("display","none");
-        clearInterval(refreshLoop);
-        $.post("/stop-stream",function(value){
-            console.log(JSON.parse(value));
+    var sentimentPlot = $('#sentimentSeriesContainer');
+
+    var controlPanel = $("#controlPanel");
+    var streamChoice = $("#streamChoice");
+    var liveVisuals = $("#liveVisuals");
+
+    var sampleButton = $("#sampleButton");
+    var filterButton = $("#filterButton");
+    var pauseButton = $("#pauseButton");
+    var playButton = $("#playButton");
+    var stopButton = $("#stopButton");
+
+    // hashtag filters!
+    var hashtagFilterInput = $('#hashtagFilterInput')
+        .selectize({
+            delimiter: ',',
+            persist: false,
+            create: function(input) {
+                return {
+                    value: input,
+                    text: input
+                }
+            },
+            onChange: function(value){
+                hashtagFilters = value == "" ? null : value.split(",");
+                // console.log(value);
+                console.log(hashtagFilters);
+            }
         });
-        $("#streamChoice").css("display","block");
+
+    $("#clearHashtagFilterInput").on("click", function(){
+        hashtagFilterInput[0].selectize.clear();
+    });
+
+    // Charts!
+    Highcharts.setOptions({
+        global: {
+            useUTC: false
+        }
+    });
+
+    // Create the chart
+    sentimentPlot.highcharts('StockChart', {
+
+        yAxis: {
+            min: -1,
+            max: 1,
+            tickInterval: .1,
+            plotLines: [{
+                color: '#FF0000',
+                width: 2,
+                value: 0,
+                dashStyle: 'longdash'
+            }]
+        },
+
+        rangeSelector: {
+            buttons: [
+            {
+                count: 1,
+                type: 'minute',
+                text: '1M'
+            }, {
+                count: 2,
+                type: 'minute',
+                text: '2M'
+            }, {
+                count: 5,
+                type: 'minute',
+                text: '5M'
+            }, {
+                type: 'all',
+                text: 'All'
+            }],
+            inputEnabled: false,
+            selected: 0
+        },
+
+        title : {
+            text : 'Live Sentiment Data',
+            style : {
+                "font-size" : "20px"
+            }
+        },
+
+        exporting: {
+            enabled: false
+        },
+
+        series : [
+            {
+                name : 'Sentiment Score',
+                lineWidth : 0,
+                    marker : {
+                        enabled : true,
+                        radius : 2
+                    },
+            },
+            {
+                name: 'Avg. Last 15',
+                color: '#3300FF',
+            }
+        ],
+        tooltip: {
+            valueDecimals: 3,
+        }
+    });
+    
+    var sentimentPlotSeries = sentimentPlot.highcharts().series;
+
+    var updateData = function(){
+        $.post('/get-data', function(value) {
+            var raw_data = JSON.parse(value);
+            console.log(raw_data["TOTAL_TWEET_COUNT"]);
+            var globalSentiment = raw_data["GLOBAL_SENTIMENT"];
+            var final = globalSentiment.map(sentimentTimestampToDate);
+
+            var buckets = bucketSentimentArray(globalSentiment).map(function(x){
+                return [ x[0]*1000, x[1] ];
+            });
+            var maBuckets = movingAverageSentimentArray(buckets, 15);
+
+            sentimentPlotSeries[0].setData(buckets);
+            sentimentPlotSeries[1].setData(maBuckets);
+        });
+    };
+
+    var launchVisuals = function(){
+        refreshLoop = setInterval( updateData, 1000 );
+        streamChoice.css("display","none");
+        pauseButton.css("display","inline");
+        playButton.css("display","none");
+        controlPanel.css("display","inline");
+        liveVisuals.css("display","inline");
+    };
+
+    // BUTTONS!
+    pauseButton.on('click', function(){
+        console.log("Pause plot updates");
+        clearInterval(refreshLoop);
+        playButton.css("display","inline");
+        $(this).css("display","none");
+    });
+
+    playButton.on('click', function(){
+        console.log("Resume plot updates");
+        refreshLoop = setInterval( updateData, 1000 );
+        pauseButton.css("display","inline");
+        $(this).css("display","none");
+    });
+
+    stopButton.on('click', function(){
+        clearInterval(refreshLoop);
+        $.post("/stop-stream",function(value, status){
+            console.log("Stopping stream: " + status );
+        });
+        controlPanel.css("display","none");
+        liveVisuals.css("display","none");
+        streamChoice.css("display","inline");
     });
 
     // Methods to start stream 
-    $("#sampleButton").on("click", function(_){
-        console.log("clicked sampleButton");
-        $.post("/start-stream", function(value){
-            console.log("Start stream: " + JSON.parse(value) );
+    sampleButton.on("click", function(){
+        $.post("/start-stream", function(value, status){
+            console.log("Starting stream: " + status );
         });
-        $("#streamChoice").css("display","none");
-        $("#stopButton").css("display","block");
-        $("#streamOutput").css("display","block");
-        $("#stockChartContainer").css("display","block");
-
-        // Chart!
-        Highcharts.setOptions({
-            global: {
-                useUTC: false
-            }
-        });
-
-        // Create the chart
-        sentimentPlot.highcharts('StockChart', {
-
-            yAxis: {
-                min: -1,
-                max: 1,
-                tickInterval: .1,
-                plotLines: [{
-                    color: '#FF0000',
-                    width: 2,
-                    value: 0,
-                    dashStyle: 'longdash'
-                }]
-            },
-
-            rangeSelector: {
-                buttons: [
-                {
-                    count: 1,
-                    type: 'minute',
-                    text: '1M'
-                }, {
-                    count: 2,
-                    type: 'minute',
-                    text: '2M'
-                }, {
-                    count: 5,
-                    type: 'minute',
-                    text: '5M'
-                }, {
-                    type: 'all',
-                    text: 'All'
-                }],
-                inputEnabled: false,
-                selected: 0
-            },
-
-            title : {
-                text : 'Live Sentiment Data'
-            },
-
-            exporting: {
-                enabled: false
-            },
-
-            series : [
-                {
-                    name : 'Sentiment Score',
-                    lineWidth : 0,
-                        marker : {
-                            enabled : true,
-                            radius : 2
-                        },
-                },
-                {
-                    name: 'Avg. Last 15',
-                    color: '#3300FF',
-                }
-            ],
-            tooltip: {
-                valueDecimals: 3,
-            }
-        });
-
-        // set up the updating of the chart each second
-        var sentimentPlotSeries = sentimentPlot.highcharts().series;
-        console.log(sentimentPlotSeries);
-
-        // Load/Refresh/Render stream data
-        refreshLoop = setInterval(function () {
-            $.post('/get-data', function(value) {
-                var raw_data = JSON.parse(value);
-                console.log(raw_data["TOTAL_TWEET_COUNT"]);
-                var globalSentiment = raw_data["GLOBAL_SENTIMENT"];
-                var final = globalSentiment.map(sentimentTimestampToDate);
-
-                var buckets = bucketSentimentArray(globalSentiment).map(function(x){
-                    return [ x[0]*1000, x[1] ];
-                });
-                var maBuckets = movingAverageSentimentArray(buckets, 15);
-
-                sentimentPlotSeries[0].setData(buckets);
-                sentimentPlotSeries[1].setData(maBuckets);
-                // console.log(buckets);
-                // console.log(maBuckets);
-
-            });
-
-        }, 1000);
-
-        
+        launchVisuals();
     });
+
+    // Methods to start stream 
+
+
+    filterButton.on("click", function(){
+        console.log('clicked filter button');
+
+        $.post("/start-stream", function(value, status){
+            console.log("Starting stream: " + status );
+        });
+        launchVisuals();
+    });
+    
 
 });

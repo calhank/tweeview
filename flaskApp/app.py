@@ -152,6 +152,8 @@ def connectStream():
 @app.route("/stop-stream", methods=["POST"])
 def disconnectStream():
 	print "Stopping Stream"
+	global tweet_array
+	tweet_array = list()
 	STREAM.disconnect()
 	return json.dumps(True)
 
