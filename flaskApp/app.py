@@ -6,11 +6,17 @@ from contextlib import closing
 # Miscellaneous imports 
 import tweepy 
 from vaderSentiment.vaderSentiment import sentiment
-from collections import defaultdict 
-from time import sleep, time
+from time import time
 import json 
 import re
 import pprint
+
+# configuration
+DATABASE = '/tmp/flaskApp.db'
+DEBUG = True
+SECRET_KEY = 'daa1306d061b233fcdf244f2974efcbbe67d47238d105c0af968e380'
+USERNAME = 'admin'
+PASSWORD = 'default'
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -23,22 +29,16 @@ keys = {
 	, 'access_token': '286789101-m9DbIXjfU5zeddtIsMRtgQ5DeNy64hnDOVr2KFnB'
 	, 'access_token_secret': 'H8DSy6MrLmMNnqk9IJh4JiTuk0XsDAmTfNgwmcb9OuQvk'
 
-}
-
+}  
 
 # regex
 hashtag_re = re.compile(r'#\w\w+')
-# at_re = re.compile(r'#\w\w+')
 
 # data
-# hashtags = {}
-# total_count = {"ct": 0}
-# global_sentiment = list()
-# recent_sentiment = list()
+total_count = {"ct": 0}
+global_sentiment = list()
 
 pp = pprint.PrettyPrinter(indent=1).pprint
-
-
 
 class MyStreamListener(tweepy.StreamListener):
 
@@ -48,40 +48,11 @@ class MyStreamListener(tweepy.StreamListener):
 
 		""" Append sentiment values of each tweet to a size-limited array. """
 
-		# status = json.loads(status._json)
-		# pp(status)
-
-
 		now = time()
 		tweet = status.text.encode('utf-8')
-		# match = hashtag_re.findall(tweet)
 		score = sentiment(tweet)
-		# global_sentiment.append(score)
 		global_sentiment.append((now,score["compound"]))
 		total_count['ct'] += 1
-
-		# try:
-
-		# for m in match:
-		# 	# m = m[1:]# strip hash
-		# 	try:
-		# 		hashtags[m]["count"] += 1
-		# 		hashtags[m]["sentiment"] = ( ( hashtags[m]["sentiment"] * (hashtags[m]["count"] - 1)) + score["compound"] ) / hashtags[m]["count"]
-		# 		# hashtags[m]["sentiment"]["pos"] += score["pos"]
-		# 		# hashtags[m]["sentiment"]["neg"] += score["neg"]
-		# 	except KeyError:
-		# 		hashtags[m] = {"count": 1, "sentiment": score['compound'] }
-		# 		# hashtags[m] = {"count": 1, "sentiment": {"pos": score['pos'], "neg":score['neg']} }
-
-		# if abs(score["compound"]) > 0.0:
-		# 	if len(global_sentiment) > 500: global_sentiment.pop(0)
-		# 	global_sentiment.append(score["compound"])
-		# 	recent_sentiment.append(score["compound"])
-
-		# except Exception as e:
-		# 	print e
-		# 	pass
-
 
 	def on_error(self, status_code):
 
@@ -104,9 +75,23 @@ def startStream(filters=None, coordinates=None):
 	myStream = tweepy.Stream(auth=api.auth, listener=MyStreamListener())
 
 	if filters is None:
-		myStream.sample(async=True)
+		myStream.sample(async=True, languages=["en"])
 	else:
-		myStream.filter(track=filters, async=True)
+		myStream.filter(track=filters, async=True, languages=["en"])
+
+	
+@app.route("/start-stream", methods=["POST"])
+def connectToStream():
+	print "Starting Stream"
+	filters = request.args.get('filters')
+	if filters is not None:
+		filters = filters.split(',')
+		startStream(filters)
+
+	else:
+		startStream()
+
+	return json.dumps(True)
 
 
 @app.route("/", methods=["GET"])
@@ -114,48 +99,34 @@ def renderHomepage():
 	return render_template("index.html")
 
 
-@app.route('/live/view', methods=['GET', 'POST'])
-def renderGraph(): 
-
-	""" This function manages the rendering for the graph page. If the page is first requested, or refreshed, 
-	it will submit a 5-second stream. If a post request is submitted, it will clear the list and 
-	submit a new template of values. """
-
-	# global hashtags
+@app.route("/get-data", methods=["POST"])
+def getStreamData():
+	
 	global total_count
 	global global_sentiment
-	# global recent_sentiment
 
-	if request.method == 'GET':
+	return json.dumps([global_sentiment, total_count["ct"]])
 
-		filters = request.args.get('filters')
-		if filters is not None:
-			filters = filters.split(',')
-			startStream(filters)
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+
+	""" This function tracks the login of the user. """
+
+	error = None
+	if request.method == 'POST':
+
+		if request.form['username'] != app.config['USERNAME']:
+			error = 'Invalid username'
+		
+		elif request.form['password'] != app.config['PASSWORD']:
+			error = 'Invalid password'
 		else:
-			startStream()
+			session['logged_in'] = True
+			flash('You were logged in')
+			return redirect(url_for('renderHomepage'))
 
-		return render_template('hs-stream-view.html')
-
-	elif request.method == 'POST':
-
-		sleep(.25)
-
-		return json.dumps([global_sentiment, total_count["ct"]])
-		# sleep(.5)
-
-		# taglist = [ {"tag": key, "count": hashtags[key]["count"], "sentiment":hashtags[key]["sentiment"] } for key in list(hashtags.keys()) if hashtags[key]["count"] > 1 ]
-		# top20hashtags = sorted(taglist, key=lambda x: x["count"], reverse=True)[:20]		
-		# unique_count = len(hashtags)
-		# rs = sum(recent_sentiment)/len(recent_sentiment) if len(recent_sentiment) > 0 else 0
-		# recent_sentiment = recent_sentiment[:10]
-		# return json.dumps([top20hashtags, global_sentiment, total_count['ct'], unique_count, rs])
-
-
-	else: 
-		pass
-
+	return render_template('login.html', error=error)
 
 
 if __name__ == '__main__':
