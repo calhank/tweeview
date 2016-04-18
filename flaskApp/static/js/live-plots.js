@@ -8,11 +8,11 @@ var sentimentTimestampToDate = function(sts){
     return [date, sts[1]];
 };
 
-var bucketSentimentArray = function(mike_sweeney){
+var bucketSentimentArray = function(sentimentArray){
         
-    var sentimentMap = mike_sweeney
+    var sentimentMap = sentimentArray
         .map(function(x){
-            return [ parseInt(x[0]), x[1] ];
+            return [ parseInt(x[0]), x[1] ]; // parse floating point timestamp string to integer
         })
         .reduce(function(prev, curr) {
         if( curr[0] in prev ){
@@ -31,6 +31,19 @@ var bucketSentimentArray = function(mike_sweeney){
     }
 
     return sentimentArray;
+};
+
+var movingAverageSentimentArray = function(sentimentArray, lags){
+
+    if(sentimentArray.length == 0){return sentimentArray;}
+
+    maSentimentArray = Array(sentimentArray.length);
+    for (i = 0; i < sentimentArray.length; i += 1) {
+        iLag = i < lags ? 0 : i - lags + 1;
+        maSum = sentimentArray.slice(iLag, i+1).map(function(x){ return parseFloat(x[1]);}).reduce(function(a,b){ return a + b; });
+        maSentimentArray[i] = [ sentimentArray[i][0], maSum / lags ];
+    }
+    return maSentimentArray;
 };
 
 $( document ).ready(function() {
@@ -76,20 +89,21 @@ $( document ).ready(function() {
                 plotLines: [{
                     color: '#FF0000',
                     width: 2,
-                    value: 0
+                    value: 0,
+                    dashStyle: 'longdash'
                 }]
             },
 
             rangeSelector: {
                 buttons: [
                 {
-                    count: 30,
-                    type: 'second',
-                    text: '30S'
-                }, {
                     count: 1,
                     type: 'minute',
                     text: '1M'
+                }, {
+                    count: 2,
+                    type: 'minute',
+                    text: '2M'
                 }, {
                     count: 5,
                     type: 'minute',
@@ -113,37 +127,44 @@ $( document ).ready(function() {
             series : [
                 {
                     name : 'Sentiment Score',
-                    tooltip: {
-                        valueDecimals: 3,
-                    },
-                    data : (function(){
-                        // generate an array of random data
-                        var data = [], time = (new Date()).getTime(), i;
-                        for (i = -29; i <= 0; i += 1) {
-                            data.push([time + i * 1000, 0]);
-                        }
-                        return data;
-                    }())
+                    lineWidth : 0,
+                        marker : {
+                            enabled : true,
+                            radius : 2
+                        },
+                },
+                {
+                    name: 'Avg. Last 15',
+                    color: '#3300FF',
                 }
             ],
+            tooltip: {
+                valueDecimals: 3,
+            }
         });
 
         // set up the updating of the chart each second
-        var sentimentPlotSeries = sentimentPlot.highcharts().series[0];
+        var sentimentPlotSeries = sentimentPlot.highcharts().series;
+        console.log(sentimentPlotSeries);
 
         // Load/Refresh/Render stream data
         refreshLoop = setInterval(function () {
             $.post('/get-data', function(value) {
                 var raw_data = JSON.parse(value);
-                var globalSentiment = raw_data[0];
+                console.log(raw_data["TOTAL_TWEET_COUNT"]);
+                var globalSentiment = raw_data["GLOBAL_SENTIMENT"];
                 var final = globalSentiment.map(sentimentTimestampToDate);
 
                 var buckets = bucketSentimentArray(globalSentiment).map(function(x){
                     return [ x[0]*1000, x[1] ];
                 });
+                var maBuckets = movingAverageSentimentArray(buckets, 15);
 
+                sentimentPlotSeries[0].setData(buckets);
+                sentimentPlotSeries[1].setData(maBuckets);
+                // console.log(buckets);
+                // console.log(maBuckets);
 
-                sentimentPlotSeries.setData(buckets);
             });
 
         }, 1000);

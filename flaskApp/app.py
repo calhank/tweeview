@@ -1,22 +1,20 @@
-# Flask imports 
-import sqlite3
+# import sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash
-from contextlib import closing
-
-# Miscellaneous imports 
+# from contextlib import closing
 import tweepy 
 from vaderSentiment.vaderSentiment import sentiment
-from time import time
+from time import time, mktime
+import copy
 import json 
-import re
 import pprint
+from collections import Counter
 
 # configuration
-DATABASE = '/tmp/flaskApp.db'
-DEBUG = True
-SECRET_KEY = 'daa1306d061b233fcdf244f2974efcbbe67d47238d105c0af968e380'
-USERNAME = 'admin'
-PASSWORD = 'default'
+# DATABASE = '/tmp/flaskApp.db'
+# DEBUG = True
+# SECRET_KEY = 'daa1306d061b233fcdf244f2974efcbbe67d47238d105c0af968e380'
+# USERNAME = 'admin'
+# PASSWORD = 'default'
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -31,21 +29,48 @@ keys = {
 
 }  
 
-# regex
-hashtag_re = re.compile(r'#\w\w+')
-
-# data
-total_count = {"ct": 0}
-global_sentiment = list()
 
 pp = pprint.PrettyPrinter(indent=1).pprint
 
+def parse_tweet_array(tweet_array):
+
+	output = {}
+	output["TOTAL_TWEET_COUNT"] = len(tweet_array)
+	output["TOP_TAGS"] = Counter()
+	output["GLOBAL_SENTIMENT"] = []
+	
+	for tweet_tuple in tweet_array:
+		tweet = tweet_tuple[1]
+		ht = tweet["hashtag"]
+		output["TOP_TAGS"][ht] += 1
+
+		sentimentTuple = (tweet["timestamp"], tweet["sentiment"])
+		output["GLOBAL_SENTIMENT"].append( sentimentTuple )
+		try:
+			output[ht]["sentiment_series"].append( sentimentTuple )
+			output[ht]["total_observations"] += 1
+			for word in tweet["text"].split(" "):
+				output[ht]["word_count"][word] += 1
+
+		except KeyError:
+			output[ht] = {}
+			output[ht]["sentiment_series"] = [ sentimentTuple ]
+			output[ht]["total_observations"] = 1
+			output[ht]["word_count"] = Counter()
+			for word in tweet["text"].split(" "):
+				output[ht]["word_count"][word] += 1
+
+	return output
+
+def truncate_tweet_array(tweet_array, max_tweets=100000, max_time_seconds = 60*30 ):
+	return [tweet for tweet in tweet_array if time() - tweet[0] <= max_time_seconds ][-max_tweets:]
+	
+# data
+tweet_array = list()
 
 ## TWEEPY METHODS AND INITIALIZATION
 
 class TweeviewListener(tweepy.StreamListener):
-	# def __init__(self, api=None):
-	# 	super(TweeviewListener, self).__init__()
 
 	""" Overrides the default streaming settings. """
 
@@ -53,11 +78,30 @@ class TweeviewListener(tweepy.StreamListener):
 
 		""" Append sentiment values of each tweet to a size-limited array. """
 
-		now = time()
-		tweet = status.text.encode('utf-8')
-		score = sentiment(tweet)
-		global_sentiment.append((now,score["compound"]))
-		total_count['ct'] += 1
+		try:
+
+			now = time()
+
+			parsed_tweet = {}
+			ds = set(dir(status)) 
+			parsed_tweet["is_rt"] = "retweeted_status" in ds
+			parsed_tweet["timestamp"] = mktime(status.created_at.timetuple())
+			parsed_tweet["sentiment"] = sentiment(status.text.encode('utf-8'))["compound"]
+			parsed_tweet["text"] = status.text.encode('utf-8')
+
+			if len(status.entities["hashtags"]) == 0:
+				parsed_tweet["hashtag"] = None
+				tweet_array.append( (now, parsed_tweet) )
+			else:
+				for ht in status.entities["hashtags"]:
+					parsed_tweet["hashtag"] = ht["text"]
+					tweet_array.append( (now, copy.deepcopy(parsed_tweet)) )
+		
+		except KeyboardInterrupt:
+			return False
+
+		except Exception, e:
+			print "Exception!", type(e).__name__, e
 
 	def on_error(self, status_code):
 
@@ -114,11 +158,17 @@ def disconnectStream():
 
 @app.route("/get-data", methods=["POST"])
 def getStreamData():
-	
-	global total_count
-	global global_sentiment
 
-	return json.dumps([global_sentiment, total_count["ct"]])
+	"""Returns parsed data from stream"""
+
+	global tweet_array
+
+	# limit tweet array size to last 30 min or 100k tweets
+	tweet_array = truncate_tweet_array(tweet_array, max_time_seconds=30 * 60, max_tweets=100000)
+
+	pta = parse_tweet_array(tweet_array)
+
+	return json.dumps(pta)
 
 
 if __name__ == '__main__':
