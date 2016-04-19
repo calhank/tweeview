@@ -8,6 +8,26 @@ var sentimentTimestampToDate = function(sts){
     return [date, sts[1]];
 };
 
+var geoPointRadiusToBox = function(location, radius){
+    // code adapted from http://gis.stackexchange.com/questions/2951/algorithm-for-offsetting-a-latitude-longitude-by-some-amount-of-meters
+
+     //Earth’s radius, sphere
+     var R = 6378137
+
+     //Coordinate offsets in radians
+     var dLat = radius/R
+     var dLon = radius/(R*Math.cos(location.latitude/180))
+
+     //OffsetPosition, decimal degrees
+     var latO = (location.latitude - dLat * 180/Math.PI).toFixed(1)
+     var lonO = (location.longitude - dLon * 180/Math.PI ).toFixed(1)
+
+     var lat1 = (location.latitude + dLat * 180/Math.PI).toFixed(1)
+     var lon1 = (location.longitude + dLon * 180/Math.PI ).toFixed(1)
+
+    return  lonO + "," + latO + "," + lon1 + "," + lat1;
+};
+
 var bucketSentimentArray = function(sentimentArray){
         
     var sentimentMap = sentimentArray
@@ -335,19 +355,25 @@ $( document ).ready(function() {
         filterOptions.css('display','');
         geoFilter.locationpicker(
             {
-                location: {latitude: 39.9526, longitude: -75.1652},
-                // locationName: "",
+                location: {latitude: 40.7324319, longitude: -73.82480799999996},
+                // locationName: "Philadelphia, PA",
                 radius: 150000,
-                zoom: 6,
+                zoom: 5,
                 scrollwheel: true,
                 inputBinding: {
                     latitudeInput: null,
                     longitudeInput: null,
-                    radiusInput: null,
-                    locationNameInput: null
+                    radiusInput: $('#geoFilterRadius'),
+                    locationNameInput: $('#geoFilterLocation')
                 },
-                enableAutocomplete: false,
+                enableAutocomplete: true,
                 enableReverseGeocode: true,
+                // oninitialized: function(currentLocation, radius, isMarkerDropped) {
+                //     backendGeoFilters = geoPointRadiusToBox(currentLocation, radius);
+                // },
+                onchanged: function(currentLocation, radius, isMarkerDropped) {
+                    backendGeoFilters = geoPointRadiusToBox(currentLocation, radius);
+               }
             }
         );
     });
@@ -356,7 +382,20 @@ $( document ).ready(function() {
         filterOptions.css('display','none');
 
         var filterText = backendHashtagFilters == null ? "": "filters="+backendHashtagFilters;
-        var getUrl = "/start-stream?" + filterText ;
+        var mapText = "locations=" +backendGeoFilters;
+
+        var whichFilters =  [ $('#useTextFiltersCheckbox').is(":checked"), $('#useGeoFiltersCheckbox').is(":checked") ];
+
+        if( whichFilters[0] & whichFilters[1] ){
+            var getUrl = "/start-stream?" + filterText + "&" + mapText ;
+        } else if( whichFilters[0] & !(whichFilters[1]) ){
+            var getUrl = "/start-stream?" + filterText;
+        } else if( !(whichFilters[0]) & whichFilters[1] ){
+            var getUrl = "/start-stream?" + mapText;
+        } else{
+            var getUrl = "/start-stream";   
+        }
+
         console.log(getUrl);
 
         $.get(getUrl, function(value, status){
@@ -398,18 +437,5 @@ $( document ).ready(function() {
         });
         launchVisuals();
     });
-
-    // Methods to start stream 
-
-
-    // filterButton.on("click", function(){
-    //     console.log('clicked filter button');
-
-    //     $.post("/start-stream", function(value, status){
-    //         console.log("Starting stream: " + status );
-    //     });
-    //     launchVisuals();
-    // });
-    
 
 });

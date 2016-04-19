@@ -134,7 +134,7 @@ def startStream(filters=None, locations=None):
 
 	""" This begins the twitter stream. """ 
 
-	if filters is None:
+	if filters is None and locations is None:
 		STREAM.sample(async=True, languages=["en"])
 	else:
 		STREAM.filter(track=filters, locations=locations, async=True, languages=["en"])
@@ -150,10 +150,12 @@ def renderHomepage():
 def connectStream():
 	print "Starting Stream"
 	filters = request.args.get('filters')
-	coordinates = request.args.get('coordinates')
+	coordinates = request.args.get('locations')
 	if filters is not None:
 		filters = filters.split(',')
 		print "Filters:", ",".join(filters)
+	if coordinates is not None:
+		coordinates = [float(x) for x in coordinates.split(",")]
 		print "Coordinates:", coordinates
 	startStream(filters=filters, locations=coordinates)
 

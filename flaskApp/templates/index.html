@@ -117,21 +117,50 @@
                     </div>
             </div>
 
-            <div id="filterOptions" class="container" style="display:none;">
+            <div id="filterOptions" class="container text-center" style="display:none;">
 
                 <div class='row'>
-                    <div class="col-lg-6 col-md-12 text-center" >
+                    <div class="col-lg-4 text-center" >
                         <p>Enter some key words to track in the Twitter stream. Put in as many as you want!</p>
 
                         <input id="backendFilterInput" type="text" placeholder="Enter Keywords Here">
                     </div>
-                    <div id="geoFilterContainer" class="col-lg-6 col-md-12 text-center">    
-                        <p>Drag the marker to choose a location</p>
-                        <div id="geoFilter" style="width: 500px; height: 400px;"></div>
+                    <div id="geoFilterContainer" class="col-lg-6 text-center">   
+                        <p>Drag the marker to choose a location or type a location below.</p>
+
+                        <table class='text-left'>
+                        <tr>
+                            <td>Location</td>
+                            <td><input class='text-center' type="text" id="geoFilterLocation" style="width: 400px"/></td>
+                        </tr>
+                        <tr>
+                            <td>Radius (meters)</td>
+                            <td><input class='text-center' type="text" id="geoFilterRadius" style="width: 400px"/></td>
+                        </tr>
+                        </table>
+
+                        <div id="geoFilter" style="width: 500px; height: 400px; margin:5px 0 0 0"></div>
+                    </div>
+                    <div class="col-lg-2 col-md-12 text-right">
+
+                        <div>
+                          <label>
+                            Use Text Filters
+                            <input id="useTextFiltersCheckbox" type="checkbox" checked>
+                          </label>
+                        </div>
+                        <div>
+                          <label>
+                            Use Geography
+                            <input id="useGeoFiltersCheckbox" type="checkbox">
+                          </label>
+                        </div>
+
+                        <button id="startFilterButton" class="huge-text btn btn-primary">Go!</button>
+
                     </div>
                 </div>
 
-                <button id="startFilterButton" class="btn btn-primary">Go!</button>
             </div>
 
 
