@@ -36,29 +36,35 @@ def parse_tweet_array(tweet_array):
 
 	output = {}
 	output["TOTAL_TWEET_COUNT"] = len(tweet_array)
-	output["TOP_TAGS"] = Counter()
+	output["TAG_COUNT"] = Counter()
 	output["GLOBAL_SENTIMENT"] = []
 	
 	for tweet_tuple in tweet_array:
-		tweet = tweet_tuple[1]
-		ht = tweet["hashtag"]
-		output["TOP_TAGS"][ht] += 1
-
-		sentimentTuple = (tweet["timestamp"], tweet["sentiment"])
-		output["GLOBAL_SENTIMENT"].append( sentimentTuple )
 		try:
-			output[ht]["sentiment_series"].append( sentimentTuple )
-			output[ht]["total_observations"] += 1
-			for word in tweet["text"].split(" "):
-				output[ht]["word_count"][word] += 1
+			tweet = tweet_tuple[1]
+			ht = tweet["hashtag"]
+			output["TAG_COUNT"][ht] += 1
 
-		except KeyError:
-			output[ht] = {}
-			output[ht]["sentiment_series"] = [ sentimentTuple ]
-			output[ht]["total_observations"] = 1
-			output[ht]["word_count"] = Counter()
-			for word in tweet["text"].split(" "):
-				output[ht]["word_count"][word] += 1
+			sentimentTuple = (tweet["timestamp"], tweet["sentiment"])
+			output["GLOBAL_SENTIMENT"].append( sentimentTuple )
+			try:
+				output[ht]["sentiment_series"].append( sentimentTuple )
+				output[ht]["total_observations"] += 1
+				for word in tweet["text"].split(" "):
+					output[ht]["word_count"][word] += 1
+
+			except KeyError:
+				output[ht] = {}
+				output[ht]["sentiment_series"] = [ sentimentTuple ]
+				output[ht]["total_observations"] = 1
+				output[ht]["word_count"] = Counter()
+				for word in tweet["text"].split(" "):
+					output[ht]["word_count"][word] += 1
+
+		except Exception,e:
+			print e
+
+	output["TOP_TAGS"] = output["TAG_COUNT"].most_common()
 
 	return output
 
@@ -90,8 +96,7 @@ class TweeviewListener(tweepy.StreamListener):
 			parsed_tweet["text"] = status.text.encode('utf-8')
 
 			if len(status.entities["hashtags"]) == 0:
-				parsed_tweet["hashtag"] = None
-				tweet_array.append( (now, parsed_tweet) )
+				pass
 			else:
 				for ht in status.entities["hashtags"]:
 					parsed_tweet["hashtag"] = ht["text"]
