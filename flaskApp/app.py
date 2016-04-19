@@ -45,7 +45,7 @@ def parse_tweet_array(tweet_array):
 			ht = tweet["hashtag"]
 			output["TAG_COUNT"][ht] += 1
 
-			sentimentTuple = (tweet["timestamp"], tweet["sentiment"])
+			sentimentTuple = (tweet["timestamp"], tweet["sentiment"], tweet["is_rt"])
 			output["GLOBAL_SENTIMENT"].append( sentimentTuple )
 			try:
 				output[ht]["sentiment_series"].append( sentimentTuple )
