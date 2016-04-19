@@ -14,6 +14,7 @@ Highcharts.SparkLine = function (a, b, c) {
                         overflow: 'visible'
                         // overflow: 'hidden'
                     },
+                    animation: false,
                     // skipClone: true,
                 },
                 title: {

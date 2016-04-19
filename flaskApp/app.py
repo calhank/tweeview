@@ -36,7 +36,9 @@ def parse_tweet_array(tweet_array):
 
 	output = {}
 	output["TOTAL_TWEET_COUNT"] = len(tweet_array)
+	output["TOTAL_TWEET_COUNT_NON_RT"] = 0
 	output["TAG_COUNT"] = Counter()
+	output["TAG_COUNT_NON_RT"] = Counter()
 	output["GLOBAL_SENTIMENT"] = []
 	
 	for tweet_tuple in tweet_array:
@@ -44,6 +46,9 @@ def parse_tweet_array(tweet_array):
 			tweet = tweet_tuple[1]
 			ht = tweet["hashtag"]
 			output["TAG_COUNT"][ht] += 1
+			if tweet["is_rt"]:
+				output["TOTAL_TWEET_COUNT_NON_RT"] += 1
+				output["TAG_COUNT_NON_RT"][ht] += 1
 
 			sentimentTuple = (tweet["timestamp"], tweet["sentiment"], tweet["is_rt"])
 			output["GLOBAL_SENTIMENT"].append( sentimentTuple )
@@ -65,6 +70,8 @@ def parse_tweet_array(tweet_array):
 			print e
 
 	output["TOP_TAGS"] = output["TAG_COUNT"].most_common()
+	output["TOTAL_TAG_COUNT"] = len(output["TAG_COUNT"])
+	output["TOTAL_TAG_COUNT_NON_RT"] = len(output["TAG_COUNT_NON_RT"])
 
 	return output
 
@@ -96,7 +103,8 @@ class TweeviewListener(tweepy.StreamListener):
 			parsed_tweet["text"] = status.text.encode('utf-8')
 
 			if len(status.entities["hashtags"]) == 0:
-				pass
+				parsed_tweet["hashtag"] = "(No Hashtag)"
+				tweet_array.append( (now, copy.deepcopy(parsed_tweet)) )
 			else:
 				for ht in status.entities["hashtags"]:
 					parsed_tweet["hashtag"] = ht["text"]

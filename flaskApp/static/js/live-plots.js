@@ -72,10 +72,14 @@ $( document ).ready(function() {
     var backendHashtagFilters;
     var backendGeoFilters;
 
+    var summaryTotalTweets = $('#summaryTotalTweets');
+    var summaryOriginalTweets = $('#summaryOriginalTweets');
+    var summaryTotalHashtags = $('#summaryTotalHashtags');
+    var summaryUniqueHashtags = $('#summaryUniqueHashtags');
+    
     var sentimentPlot = $('#sentimentSeriesContainer');
 
     var geoFilter = $('#geoFilter');
-    geoFilter.locationpicker();
 
     var controlPanel = $("#controlPanel");
     var streamChoice = $("#streamChoice");
@@ -176,10 +180,6 @@ $( document ).ready(function() {
         rangeSelector: {
             buttons: [
             {
-                count: 1,
-                type: 'minute',
-                text: '1M'
-            }, {
                 count: 2,
                 type: 'minute',
                 text: '2M'
@@ -242,6 +242,15 @@ $( document ).ready(function() {
     var sentimentPlotSeries = sentimentPlot.highcharts().series;
 
     var rawData;
+    var updateSummary = function(){
+
+        summaryTotalTweets.text(rawData["TOTAL_TWEET_COUNT"]);
+        summaryOriginalTweets.text(rawData["TOTAL_TWEET_COUNT_NON_RT"]);
+        summaryTotalHashtags.text(rawData["TOTAL_TAG_COUNT"]);
+        summaryUniqueHashtags.text(rawData["TOTAL_TAG_COUNT_NON_RT"]);
+
+    };
+
     var updateSentimentPlotSeries = function(){
         var sentimentSeriesRaw;
         if(hashtagFilters == null){
@@ -249,6 +258,8 @@ $( document ).ready(function() {
         } else{
             sentimentSeriesRaw = combineFilteredSentimentArrays(rawData, hashtagFilters);
         }
+
+        // TODO enter code to control for retweets HERE
 
         var sentimentSeriesBuckets = bucketSentimentArray(sentimentSeriesRaw).map(function(x){
             return [ x[0]*1000, x[1] ];
@@ -261,7 +272,9 @@ $( document ).ready(function() {
     };
 
     var updateSparklines = function(){
-        var topTags = rawData["TOP_TAGS"].slice(0,20);
+        var topTags = rawData["TOP_TAGS"].filter(function(x){
+            return x[0] != "(No Hashtag)";
+        }).slice(0,20);
         topTags.map(function(tag,i){
             var row = $(".rank-"+i);
             row.css("display","table-row");
@@ -301,8 +314,9 @@ $( document ).ready(function() {
         }
         var topTags = rawData["TOP_TAGS"].slice(0,10);
         
-        updateSentimentPlotSeries();  
+        updateSummary();
         updateSparklines();
+        updateSentimentPlotSeries();  
     };
 
     var launchVisuals = function(){
@@ -317,7 +331,25 @@ $( document ).ready(function() {
 
 
     filterButton.on('click', function(){
-        filterOptions.css('display','inline');
+        streamChoice.css("display","none");
+        filterOptions.css('display','');
+        geoFilter.locationpicker(
+            {
+                location: {latitude: 39.9526, longitude: -75.1652},
+                // locationName: "",
+                radius: 150000,
+                zoom: 6,
+                scrollwheel: true,
+                inputBinding: {
+                    latitudeInput: null,
+                    longitudeInput: null,
+                    radiusInput: null,
+                    locationNameInput: null
+                },
+                enableAutocomplete: false,
+                enableReverseGeocode: true,
+            }
+        );
     });
 
     startFilterButton.on('click', function(){
