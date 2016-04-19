@@ -138,7 +138,7 @@ def renderHomepage():
 	return render_template("index.html")
 
 	
-@app.route("/start-stream", methods=["POST"])
+@app.route("/start-stream", methods=["GET"])
 def connectStream():
 	print "Starting Stream"
 	filters = request.args.get('filters')
@@ -147,9 +147,7 @@ def connectStream():
 		filters = filters.split(',')
 		print "Filters:", ",".join(filters)
 		print "Coordinates:", coordinates
-		startStream(filters=filters, coordinates=coordinates)
-	else:
-		startStream()
+	startStream(filters=filters, locations=coordinates)
 
 	return json.dumps(True)
 

@@ -6,9 +6,10 @@ Highcharts.SparkLine = function (a, b, c) {
                     renderTo: (options.chart && options.chart.renderTo) || this,
                     backgroundColor: null,
                     type: 'line',
-                    margin: [2, 0, 2, 0],
-                    width: 200,
-                    height: 24,
+                    // type: 'spline',
+                    margin: [0, 0, 0, 0],
+                    width: 175,
+                    height: 20,
                     style: {
                         overflow: 'visible'
                         // overflow: 'hidden'
@@ -45,12 +46,12 @@ Highcharts.SparkLine = function (a, b, c) {
                     title: {
                         text: null
                     },
-                    tickPositions: [],
+                    // tickPositions: [0],
                     plotLines: [{
                         color: '#FF0000',
                         width: 1.5,
                         value: 0,
-                        dashStyle: 'shortdash',
+                        dashStyle: 'dash',
                         animation: false
                     }]
                 },
@@ -58,7 +59,7 @@ Highcharts.SparkLine = function (a, b, c) {
                     enabled: false
                 },
                 tooltip: {
-                    // enabled: false,
+                    enabled: false,
                     animation: false,
                     backgroundColor: null,
                     borderWidth: 0,
@@ -75,7 +76,7 @@ Highcharts.SparkLine = function (a, b, c) {
                     series: {
                         name: "Sentiment Score",
                         animation: false,
-                        lineWidth: 1,
+                        lineWidth: 1.5,
                         shadow: false,
                         states: {
                             hover: {
@@ -83,13 +84,7 @@ Highcharts.SparkLine = function (a, b, c) {
                             }
                         },
                         marker: {
-                            radius: 1,
-                            states: {
-                                hover: {
-                                    // enabled: false,
-                                    radius: 1.5
-                                }
-                            }
+                            radius: 2.25,
                         }
                     },
                 }

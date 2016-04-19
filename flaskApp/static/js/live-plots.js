@@ -69,8 +69,13 @@ $( document ).ready(function() {
     var updateData; 
     var refreshLoop;
     var hashtagFilters;
+    var backendHashtagFilters;
+    var backendGeoFilters;
 
     var sentimentPlot = $('#sentimentSeriesContainer');
+
+    var geoFilter = $('#geoFilter');
+    geoFilter.locationpicker();
 
     var controlPanel = $("#controlPanel");
     var streamChoice = $("#streamChoice");
@@ -78,6 +83,9 @@ $( document ).ready(function() {
 
     var sampleButton = $("#sampleButton");
     var filterButton = $("#filterButton");
+    var startFilterButton = $('#startFilterButton');
+    var filterOptions = $('#filterOptions');
+
     var pauseButton = $("#pauseButton");
     var playButton = $("#playButton");
     var stopButton = $("#stopButton");
@@ -86,23 +94,27 @@ $( document ).ready(function() {
     // Initialize Sparklines
     var top10TagTableBody = $("#top10TagTableBody");
     for( i=0; i < 10; i+=1){
-        var rowHTML = '<tr class="rank-' + i + '"></tr>';
+        var rowHTML = '<tr class="rank-' + i + '" style="display:none"></tr>';
         top10TagTableBody.append(rowHTML);
     }
+    var top20TagTableBody = $("#top20TagTableBody");
+    for( i=10; i < 20; i+=1){
+        var rowHTML = '<tr class="rank-' + i + '" style="display:none"></tr>';
+        top20TagTableBody.append(rowHTML);
+    }
     top10TagTableBody.children("tr").append(
-        '<td class="tag"></td><td class="count">0</td><td class="mean">0</td><td class="sparkline"><div class="sparklineContainer"></div></td>'
-        );
-    top10TagTableBody.find("div.sparklineContainer").map(function(_,e){
-        $(this).highcharts('SparkLine', {
-            series: [{}]
-        });
-    })
+        '<td class="rank"><td class="tag"></td><td class="count"></td><td class="mean"></td><td class="last10"></td><td class="sparkline"><div class="sparklineContainer"></div></td>');
+    top20TagTableBody.children("tr").append(
+        '<td class="rank"><td class="tag"></td><td class="count"></td><td class="mean"></td><td class="last10"></td><td class="sparkline"><div class="sparklineContainer"></div></td>');
+    $("#topTags").find("div.sparklineContainer").map(function(){
+        $(this).highcharts('SparkLine', { series: [{}] });
+    });
 
     // hashtag filters!
     var hashtagFilterInput = $('#hashtagFilterInput')
         .selectize({
             delimiter: ',',
-            persist: false,
+            persist: true,
             create: function(input) {
                 return {
                     value: input,
@@ -114,6 +126,22 @@ $( document ).ready(function() {
                 updateData(false);
                 // console.log(value);
                 // console.log(hashtagFilters);
+            }
+        });
+
+    // hashtag filters!
+    var backendFilterInput = $('#backendFilterInput')
+        .selectize({
+            delimiter: ',',
+            persist: true,
+            create: function(input) {
+                return {
+                    value: input,
+                    text: input
+                }
+            },
+            onChange: function(value){
+                backendHashtagFilters = value == "" ? null : value;
             }
         });
 
@@ -233,24 +261,35 @@ $( document ).ready(function() {
     };
 
     var updateSparklines = function(){
-        var topTags = rawData["TOP_TAGS"].slice(0,10);
+        var topTags = rawData["TOP_TAGS"].slice(0,20);
         topTags.map(function(tag,i){
             var row = $(".rank-"+i);
-            row.find("td.tag").text(tag[0]);
+            row.css("display","table-row");
+            row.find("td.rank").text(i+1);
+            row.find("td.tag").html("<a href='https://twitter.com/hashtag/"+tag[0]+"' target='_blank'>"+tag[0]+"</a>");
             row.find("td.count").text(tag[1]);
 
-            var newSer = bucketSentimentArray(rawData[tag[0]]["sentiment_series"])
-            .map(function(x){
+            var newSer = bucketSentimentArray(rawData[tag[0]]["sentiment_series"]).map(function(x){
                 return [ x[0]*1000, x[1] ];
             });
 
             row.find("td.mean").text( (newSer.map(function(x){ return parseFloat(x[1]); })
             .reduce(function(a,b){return a + b;}) / newSer.length)
             .toFixed(3));
+            row.find("td.last10").text( (newSer.slice( newSer.length-10, newSer.length).map(function(x){ return parseFloat(x[1]); })
+            .reduce(function(a,b){return a + b;}) / newSer.length)
+            .toFixed(3));
             var chart = row.find("div.sparklineContainer").highcharts();
             // var now = (new Date()).getTime();
-            chart.series[0].setData( newSer.slice( newSer.length - 30, newSer.length ) );
+            chart.series[0].setData( newSer.slice( newSer.length-30, newSer.length) );
         });
+        if(topTags.length < 20){
+            d3.range( topTags.length, 20 ).map(function(i){
+                var row = $(".rank-"+i);
+                row.css("display","none");
+                // row.css("visibility","hidden");
+            })
+        }
     };
     
     var updateData = function(getDataFromServer=true){
@@ -268,12 +307,32 @@ $( document ).ready(function() {
 
     var launchVisuals = function(){
         refreshLoop = setInterval( updateData, 1000 );
+        filterOptions.css('display','none');
         streamChoice.css("display","none");
         pauseButton.css("display","inline");
         playButton.css("display","none");
         controlPanel.css("display","inline");
         liveVisuals.css("display","inline");
     };
+
+
+    filterButton.on('click', function(){
+        filterOptions.css('display','inline');
+    });
+
+    startFilterButton.on('click', function(){
+        filterOptions.css('display','none');
+
+        var filterText = backendHashtagFilters == null ? "": "filters="+backendHashtagFilters;
+        var getUrl = "/start-stream?" + filterText ;
+        console.log(getUrl);
+
+        $.get(getUrl, function(value, status){
+            console.log("Starting stream: " + status );
+        });
+
+        launchVisuals();
+    });
 
     // BUTTONS!
     pauseButton.on('click', function(){
@@ -302,7 +361,7 @@ $( document ).ready(function() {
 
     // Methods to start stream 
     sampleButton.on("click", function(){
-        $.post("/start-stream", function(value, status){
+        $.get("/start-stream", function(value, status){
             console.log("Starting stream: " + status );
         });
         launchVisuals();
@@ -311,14 +370,14 @@ $( document ).ready(function() {
     // Methods to start stream 
 
 
-    filterButton.on("click", function(){
-        console.log('clicked filter button');
+    // filterButton.on("click", function(){
+    //     console.log('clicked filter button');
 
-        $.post("/start-stream", function(value, status){
-            console.log("Starting stream: " + status );
-        });
-        launchVisuals();
-    });
+    //     $.post("/start-stream", function(value, status){
+    //         console.log("Starting stream: " + status );
+    //     });
+    //     launchVisuals();
+    // });
     
 
 });
