@@ -82,6 +82,41 @@ var combineFilteredSentimentArrays = function(raw_data, hashtag_filters){
     return newArray;
 };
 
+var combineTopRelatedElementCounts = function(target, raw_data, hashtag_filters){
+
+    var newMap = [].concat.apply(
+        [],
+        hashtag_filters
+            .map(function(filter){
+                if(filter in raw_data){
+                    return raw_data[filter][target];
+                }
+                return [];
+            })
+        )
+        .reduce(function(prev, curr) {
+            if( curr[0] in prev ){
+                prev[curr[0]] += curr[1];
+            } else {
+                prev[curr[0]] = curr[1];
+            }
+            return prev;
+        }, {});
+
+    return newMap;
+};
+
+var prepForWordCloud = function(wordMap){
+        
+    var newArray = [];
+    for( key in wordMap ){
+        var val = wordMap[ key ];
+        newArray.push( {"text":key, "weight":val} );
+    }
+
+    return newArray;
+};
+
 $( document ).ready(function() {
     console.log( "Page Ready!" );
 
@@ -271,6 +306,40 @@ $( document ).ready(function() {
 
     };
 
+    var wordCloud = $('#wordCloudContainer');
+    wordCloud.jQCloud([{"text":"None","weight":1}],{
+        width: 500,
+        height: 400
+    });
+
+    
+    var updateWordCloud = function(){
+
+        if( hashtagFilters == null ){
+            var newWords = rawData["TOP_WORDS"].map(function(x){
+                return {"text":x[0], "weight":x[1]};
+            });
+        } else {
+            var newWords = prepForWordCloud(
+                    combineTopRelatedElementCounts("word_count", rawData, hashtagFilters)
+                    );
+        }
+
+        newWords = newWords.sort(
+            function compare(a,b) {
+              if (a.weight < b.weight)
+                return -1;
+              else if (a.weight > b.weight)
+                return 1;
+              else 
+                return 0;
+            }
+        ).slice(0,50);
+        // console.log(newWords);
+
+        wordCloud.jQCloud('update', newWords);
+    };
+
     var updateSentimentPlotSeries = function(){
         var sentimentSeriesRaw;
         if(hashtagFilters == null){
@@ -336,7 +405,8 @@ $( document ).ready(function() {
         
         updateSummary();
         updateSparklines();
-        updateSentimentPlotSeries();  
+        updateSentimentPlotSeries();
+        updateWordCloud();  
     };
 
     var launchVisuals = function(){
