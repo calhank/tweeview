@@ -252,7 +252,7 @@ $( document ).ready(function() {
     // D3 Sentiment Histogram Plot
 
     var pheight = 400;
-    var pwidth = 500;
+    var pwidth = 600;
     var xcushion = 30;
     var ycushion = 20;
 
@@ -461,7 +461,7 @@ $( document ).ready(function() {
             return [spl[0], spl[1], x[1]];
         })
         .map(function(tag,i){
-            console.log(tag);
+            // console.log(tag);
             var row = $(".related-link-rank-"+i);
             row.css("display","table-row");
             row.find("td.rank").text(i+1);
