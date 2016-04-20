@@ -70,28 +70,42 @@ var combineFilteredSentimentArrays = function(raw_data, hashtag_filters){
     
     var newArray = [].concat.apply(
         [],
-        hashtag_filters
-            .map(function(filter){
-                if(filter in raw_data){
-                    return raw_data[filter]["sentiment_series"];
-                }
-                return [];
-            })
+        Object.keys(raw_data)
+            .filter(function(x){
+                // check if lower case transformation of key is in the list of hashtag filters, also lowercase transformed
+                var result = hashtag_filters
+                    .map(function(x){
+                        return x.toLowerCase(); 
+                    })
+                    .indexOf(x.toLowerCase()) == -1 ? false : true;
+                return result;
+        })
+        .map(function(x){
+            // take filtered keys and get series from raw data
+            return raw_data[x]["sentiment_series"];
+        })
     );
-
+    // console.log(newArray);
     return newArray;
 };
 
 var combineTopRelatedElementCounts = function(target, raw_data, hashtag_filters){
 
-    var newMap = [].concat.apply(
-        [],
-        hashtag_filters
-            .map(function(filter){
-                if(filter in raw_data){
-                    return raw_data[filter][target];
-                }
-                return [];
+        var newMap = [].concat.apply(
+            [],
+            Object.keys(raw_data)
+                .filter(function(x){
+                    // check if lower case transformation of key is in the list of hashtag filters, also lowercase transformed
+                    var result = hashtag_filters
+                        .map(function(x){
+                            return x.toLowerCase(); 
+                        })
+                        .indexOf(x.toLowerCase()) == -1 ? false : true;
+                    return result;
+            })
+            .map(function(x){
+                // take filtered keys and get target metric from raw data
+                return raw_data[x][target];
             })
         )
         .reduce(function(prev, curr) {
@@ -106,6 +120,17 @@ var combineTopRelatedElementCounts = function(target, raw_data, hashtag_filters)
     return newMap;
 };
 
+var prepForTopRelated = function(relMap){
+
+    // console.log(relMap);    
+    var newArray = [];
+    for( key in relMap ){
+        var val = relMap[ key ];
+        newArray.push( [key, val] );
+    }
+    return newArray;
+};
+
 var prepForWordCloud = function(wordMap){
         
     var newArray = [];
@@ -113,7 +138,6 @@ var prepForWordCloud = function(wordMap){
         var val = wordMap[ key ];
         newArray.push( {"text":key, "weight":val} );
     }
-
     return newArray;
 };
 
@@ -126,6 +150,7 @@ $( document ).ready(function() {
     var hashtagFilters;
     var backendHashtagFilters;
     var backendGeoFilters;
+    var sentHistSvg;
 
     var summaryTotalTweets = $('#summaryTotalTweets');
     var summaryOriginalTweets = $('#summaryOriginalTweets');
@@ -153,12 +178,12 @@ $( document ).ready(function() {
     // Initialize Sparklines
     var top10TagTableBody = $("#top10TagTableBody");
     for( i=0; i < 10; i+=1){
-        var rowHTML = '<tr class="rank-' + i + '" style="display:none"></tr>';
+        var rowHTML = '<tr class="sparkline-rank-' + i + '" style="display:none"></tr>';
         top10TagTableBody.append(rowHTML);
     }
     var top20TagTableBody = $("#top20TagTableBody");
     for( i=10; i < 20; i+=1){
-        var rowHTML = '<tr class="rank-' + i + '" style="display:none"></tr>';
+        var rowHTML = '<tr class="sparkline-rank-' + i + '" style="display:none"></tr>';
         top20TagTableBody.append(rowHTML);
     }
     top10TagTableBody.children("tr").append(
@@ -168,6 +193,22 @@ $( document ).ready(function() {
     $("#topTags").find("div.sparklineContainer").map(function(){
         $(this).highcharts('SparkLine', { series: [{}] });
     });
+
+    // Initialize Top Related Elements Table
+    var top10RelatedTagBody = $("#top10RelatedTagBody");
+    for( i=0; i < 10; i+=1){
+        var rowHTML = '<tr class="related-hashtag-rank-' + i + '" style="display:none"></tr>';
+        top10RelatedTagBody.append(rowHTML);
+    }
+    var top10RelatedLinkBody = $("#top10RelatedLinkBody");
+    for( i=0; i < 10; i+=1){
+        var rowHTML = '<tr class="related-link-rank-' + i + '" style="display:none"></tr>';
+        top10RelatedLinkBody.append(rowHTML);
+    }
+    top10RelatedTagBody.children("tr").append(
+        '<td class="rank"><td class="tag"></td><td class="count"></td>');
+    top10RelatedLinkBody.children("tr").append(
+        '<td class="rank"><td class="link text-left"></td><td class="count"></td>');
 
     // hashtag filters!
     var hashtagFilterInput = $('#hashtagFilterInput')
@@ -207,6 +248,51 @@ $( document ).ready(function() {
     $("#clearHashtagFilterInput").on("click", function(){
         hashtagFilterInput[0].selectize.clear();
     });
+
+    // D3 Sentiment Histogram Plot
+
+    var pheight = 400;
+    var pwidth = 500;
+    var xcushion = 30;
+    var ycushion = 20;
+
+    function minh(plotRow){
+    return 2.5*ycushion + plotRow * pheight;
+    }
+    function maxh(plotRow){
+    return (1 + plotRow) * pheight - ycushion;
+    }
+    function minw(plotCol){
+    return xcushion + pwidth * plotCol;
+    }
+    function maxw(plotCol){
+    return  (1 + plotCol) * pwidth - xcushion;
+    }
+
+    var sentHistSvg = d3.select("#sentimentHistogramContainer").append("svg")
+        .attr("width", pwidth)
+        .attr("height", pheight)
+        .attr("x", 0)
+        .attr("y", 0)
+
+    sentHistSvg.append("text")
+        .attr({
+          x: 550 / 2, 
+          y: minh(0) * .4,
+          'text-anchor': 'middle',
+          class: 'title'
+        })
+        .text("Distribution of Sentiment for Non-Neutral Tweets");
+
+
+    var negSentimentColorScale = d3.scale.sqrt()
+        .domain([-1, 0])
+        .rangeRound([ 0,230])
+
+    var posSentimentColorScale = d3.scale.sqrt()
+        .domain([0, 1]) 
+        .rangeRound([230,0])
+
 
     // Charts!
     Highcharts.setOptions({
@@ -308,33 +394,233 @@ $( document ).ready(function() {
 
     var wordCloud = $('#wordCloudContainer');
     wordCloud.jQCloud([{"text":"None","weight":1}],{
-        width: 500,
-        height: 400
+        width:450,
+        height:350,
+        autoresize: true
     });
+
+    var updateRelatedElements = function(){
+
+        var relHash;
+        var relLink;
+
+        if( hashtagFilters != null){
+            // console.log(hashtagFilters);
+            var relHash = prepForTopRelated(
+                    combineTopRelatedElementCounts("related_hashtags", rawData, hashtagFilters)).sort(
+                            function compare(a,b) {
+                              if (a[1] > b[1])
+                                return -1;
+                              else if (a[1] < b[1])
+                                return 1;
+                              else 
+                                return 0;
+                            }
+                        )
+                        .slice(0,10);
+            var relLink = prepForTopRelated(
+                    combineTopRelatedElementCounts("related_links", rawData, hashtagFilters)).sort(
+                            function compare(a,b) {
+                              if (a[1] > b[1])
+                                return -1;
+                              else if (a[1] < b[1])
+                                return 1;
+                              else 
+                                return 0;
+                            }
+                        )
+                        .slice(0,10);
+        } else {
+            var relHash = rawData["TOP_TAGS"].filter(function(x){
+                return x[0] != "(No Hashtag)";
+            }).slice(0,10);
+            var relLink = rawData["TOP_LINKS"].slice(0,10);
+        }
+
+        // console.log(relHash);
+        // console.log(relLink);
+
+        relHash.map(function(tag,i){
+            var row = $(".related-hashtag-rank-"+i);
+            row.css("display","table-row");
+            row.find("td.rank").text(i+1);
+            row.find("td.tag").html("<a href='https://twitter.com/hashtag/"+tag[0]+"' target='_blank'>"+tag[0]+"</a>");
+            row.find("td.count").text(tag[1]);
+
+        });
+        if(relHash.length < 10){
+            d3.range( relHash.length, 10 ).map(function(i){
+                var row = $(".related-hashtag-rank-"+i);
+                row.css("display","none");
+                // row.css("visibility","hidden");
+            })
+        }
+
+        relLink.map(function(x){
+            var spl = x[0].split("||");
+            return [spl[0], spl[1], x[1]];
+        })
+        .map(function(tag,i){
+            console.log(tag);
+            var row = $(".related-link-rank-"+i);
+            row.css("display","table-row");
+            row.find("td.rank").text(i+1);
+            row.find("td.link").html("<a href='"+tag[0]+"' target='_blank'>"+tag[1]+"</a>");
+            row.find("td.count").text(tag[2]);
+
+        });
+        if(relLink.length < 10){
+            d3.range( relLink.length, 10 ).map(function(i){
+                var row = $(".related-link-rank-"+i);
+                row.css("display","none");
+                // row.css("visibility","hidden");
+            })
+        }
+    };
+
+    var updateSentimentHistogram = function(){
+        ///
+        // SENTIMENT HISTOGRAM
+        ///
+
+        var sentimentSeriesRaw;
+        if(hashtagFilters == null){
+            sentimentSeriesRaw = rawData["GLOBAL_SENTIMENT"].map(function(x){
+                return x[1];
+            }).filter(function(x){
+                return Math.abs(x) != 0;
+            });
+        } else{
+            sentimentSeriesRaw = combineFilteredSentimentArrays(rawData, hashtagFilters).map(function(x){
+                return x[1];
+            }).filter(function(x){
+                return Math.abs(x) != 0;
+            });
+        }
+
+        // A formatter for counts.
+        var sentHistFormatCount = d3.format(",.0f");
+
+        var sentHistXScale = d3.scale.linear()
+            .domain([-1, 1])
+            .range([minw(0), maxw(0)]);
+
+        // Generate a histogram using twenty uniformly-spaced bins.
+        var sentHistLayout = d3.layout.histogram()
+            .bins(sentHistXScale.ticks(20))
+            (sentimentSeriesRaw);
+
+        var sentHistYScale = d3.scale.linear()
+            .domain([0, d3.max(sentHistLayout, function(d) { return d.y; })])
+            .range([maxh(0), minh(0)]);
+
+        var sentHistXAxis = d3.svg.axis()
+            .scale(sentHistXScale)
+            .orient("bottom");
+
+        var sentHistYAxis = d3.svg.axis()
+            .scale(sentHistYScale)
+            .ticks(6)
+            .orient("right");
+
+        var sentHistBars = sentHistSvg.selectAll('rect.barSh')
+            .data(sentHistLayout);
+
+        var sentHistLabels=sentHistSvg.selectAll(".labelSh")
+            .data(sentHistLayout);
+
+        sentHistBars.enter()
+          .append("rect")
+            .attr("class", "barSh")
+            .attr("x", function(d){return sentHistXScale(d.x);})
+            .attr("y", function(d) { return sentHistYScale(d.y); })
+            .attr('fill','blue')
+            .attr('value', function(d){
+              // console.log(sentHistXScale.range()[1]);
+              // console.log( (sentHistXScale.range()[1] - sentHistXScale.range()[0]) / sentHistLayout.length );
+            })
+            .attr('fill',function(d){ 
+                    if( d.x >= 0.0) {
+                      return 'rgb('+posSentimentColorScale(d.x)+ ',' +posSentimentColorScale(d.x)+ ',230)';
+                    }
+                    else {
+                      return 'rgb(230,'+negSentimentColorScale(d.x)+','+negSentimentColorScale(d.x)+')';
+                    }
+                  })
+            .attr("width", ( (sentHistXScale.range()[1] - sentHistXScale.range()[0]) / sentHistLayout.length ) - 2 )
+            .attr("height", function(d) { return maxh(0) - sentHistYScale(d.y); });
+
+        sentHistLabels.enter()
+          .append("text")
+            .attr('class', 'labelSh')
+            .style('font-size', 12)
+            .attr("dy", ".75em")
+            .attr("y", function(d) { return sentHistYScale(d.y) - 13.5; })
+            .attr("x", function(d){return sentHistXScale(d.x) + 13;})
+            .attr("text-anchor", "middle")
+            .attr('fill','black')
+            .text(function(d) { return sentHistFormatCount(d.y); });
+
+        sentHistBars.transition()
+          .attr("y", function(d) { return sentHistYScale(d.y); })
+          .attr("height", function(d) { return maxh(0) - sentHistYScale(d.y); });
+
+        sentHistLabels.transition()
+          .attr("y", function(d) { return sentHistYScale(d.y) - 14; })  
+          .text(function(d) { return sentHistFormatCount(d.y); });
+
+        d3.select('#xAxisSh')
+          .remove();
+
+        d3.select('#yAxisSh') 
+          .remove();
+
+        sentHistSvg.append("g")
+            .attr("id", "xAxisSh")
+            .attr("class", "axis")
+            .attr("transform", "translate(0," + maxh(0) + ")")
+            .call(sentHistXAxis);
+
+
+        sentHistSvg.append("g")
+            .attr("id", "yAxisSh")
+            .attr("class", "axis")
+            .attr("transform", "translate(" + maxw(0) + ",0)")
+            .call(sentHistYAxis);
+
+    }
+    
 
     
     var updateWordCloud = function(){
 
+        var newWords;
+
         if( hashtagFilters == null ){
-            var newWords = rawData["TOP_WORDS"].map(function(x){
+            newWords = rawData["TOP_WORDS"].map(function(x){
                 return {"text":x[0], "weight":x[1]};
             });
         } else {
-            var newWords = prepForWordCloud(
+            newWords = prepForWordCloud(
                     combineTopRelatedElementCounts("word_count", rawData, hashtagFilters)
                     );
+            // console.log(newWords);
         }
 
         newWords = newWords.sort(
             function compare(a,b) {
-              if (a.weight < b.weight)
+              if (a.weight > b.weight)
                 return -1;
-              else if (a.weight > b.weight)
+              else if (a.weight < b.weight)
                 return 1;
               else 
                 return 0;
             }
-        ).slice(0,50);
+        )
+        .slice(0,50)
+        .map(function(x){
+            return {"text":x["text"], "weight": Math.log(x["weight"]) };
+        });
         // console.log(newWords);
 
         wordCloud.jQCloud('update', newWords);
@@ -365,7 +651,7 @@ $( document ).ready(function() {
             return x[0] != "(No Hashtag)";
         }).slice(0,20);
         topTags.map(function(tag,i){
-            var row = $(".rank-"+i);
+            var row = $(".sparkline-rank-"+i);
             row.css("display","table-row");
             row.find("td.rank").text(i+1);
             row.find("td.tag").html("<a href='https://twitter.com/hashtag/"+tag[0]+"' target='_blank'>"+tag[0]+"</a>");
@@ -387,7 +673,7 @@ $( document ).ready(function() {
         });
         if(topTags.length < 20){
             d3.range( topTags.length, 20 ).map(function(i){
-                var row = $(".rank-"+i);
+                var row = $(".sparkline-rank-"+i);
                 row.css("display","none");
                 // row.css("visibility","hidden");
             })
@@ -405,12 +691,14 @@ $( document ).ready(function() {
         
         updateSummary();
         updateSparklines();
+        updateSentimentHistogram();
         updateSentimentPlotSeries();
         updateWordCloud();  
+        updateRelatedElements();
     };
 
     var launchVisuals = function(){
-        refreshLoop = setInterval( updateData, 1000 );
+        refreshLoop = setInterval( updateData, 2000 );
         filterOptions.css('display','none');
         streamChoice.css("display","none");
         pauseButton.css("display","inline");
@@ -485,7 +773,7 @@ $( document ).ready(function() {
 
     playButton.on('click', function(){
         console.log("Resume plot updates");
-        refreshLoop = setInterval( updateData, 1000 );
+        refreshLoop = setInterval( updateData, 2000 );
         pauseButton.css("display","inline");
         $(this).css("display","none");
     });

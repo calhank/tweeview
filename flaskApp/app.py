@@ -8,6 +8,12 @@ import copy
 import json 
 import pprint
 from collections import Counter
+from nltk.corpus import stopwords
+import string
+
+twitter_stopwords = ["rt","i'm","&amp;","u"]
+STOP_CHARS = frozenset(list(string.punctuation))
+STOP_WORDS = frozenset(stopwords.words('english') + twitter_stopwords)
 
 # configuration
 # DATABASE = '/tmp/flaskApp.db'
@@ -39,6 +45,8 @@ def parse_tweet_array(tweet_array):
 	output["TOTAL_TWEET_COUNT_NON_RT"] = 0
 	output["TAG_COUNT"] = Counter()
 	output["TAG_COUNT_NON_RT"] = Counter()
+	output["LINK_COUNT"] = Counter()
+	output["LINK_COUNT_NON_RT"] = Counter()
 	output["GLOBAL_SENTIMENT"] = []
 	output["WORD_COUNT"] = Counter()
 	output["WORD_COUNT_NON_RT"] = Counter()
@@ -47,15 +55,17 @@ def parse_tweet_array(tweet_array):
 	for tweet_tuple in tweet_array:
 		try:
 			tweet = tweet_tuple[1]
-			text_list = tweet["text"].split(" ")
+			text_list = [t for t in tweet["text"].split(" ") if t.lower() not in STOP_WORDS and t.lower()[:4] !=  "http" and t[:1] not in STOP_CHARS and len(t) > 1]
 			ht = tweet["hashtag"]
 			all_hashtags_processed.add(ht)
 			output["TAG_COUNT"][ht] += 1
 			output["WORD_COUNT"].update(text_list)
+			output["LINK_COUNT"].update(tweet["related_links"])
 			if not tweet["is_rt"]:
 				output["TOTAL_TWEET_COUNT_NON_RT"] += 1
 				output["TAG_COUNT_NON_RT"][ht] += 1
 				output["WORD_COUNT_NON_RT"].update(text_list)
+				output["LINK_COUNT_NON_RT"].update(tweet["related_links"])
 
 			sentimentTuple = (tweet["timestamp"], tweet["sentiment"], tweet["is_rt"])
 			output["GLOBAL_SENTIMENT"].append( sentimentTuple )
@@ -85,10 +95,11 @@ def parse_tweet_array(tweet_array):
 		output[ht]["related_hashtags"] = output[ht]["related_hashtags"].most_common()
 		output[ht]["related_links"] = output[ht]["related_links"].most_common()
 
-	output["TOP_TAGS"] = output["TAG_COUNT"].most_common()
-	output["TOP_TAGS_NON_RT"] = output["TAG_COUNT_NON_RT"].most_common()
-	output["TOP_WORDS"] = output["WORD_COUNT"].most_common(200)
+	output["TOP_TAGS"] = output["TAG_COUNT"].most_common(100)
+	output["TOP_TAGS_NON_RT"] = output["TAG_COUNT_NON_RT"].most_common(100)
+	output["TOP_WORDS"] = output["WORD_COUNT"].most_common(100)
 	output["TOP_WORDS_NON_RT"] = output["WORD_COUNT_NON_RT"].most_common(200)
+	output["TOP_LINKS"] = output["LINK_COUNT"].most_common(100)
 	output["TOTAL_TAG_COUNT"] = len(output["TAG_COUNT"])
 	output["TOTAL_TAG_COUNT_NON_RT"] = len(output["TAG_COUNT_NON_RT"])
 
@@ -120,7 +131,7 @@ class TweeviewListener(tweepy.StreamListener):
 			parsed_tweet["timestamp"] = mktime(status.created_at.timetuple())
 			parsed_tweet["sentiment"] = sentiment(status.text.encode('utf-8'))["compound"]
 			parsed_tweet["text"] = status.text.encode('utf-8')
-			parsed_tweet["related_links"] = [ lnk["url"] + "||" + lnk["display_url"] for lnk in status.entities["urls"]]
+			parsed_tweet["related_links"] = [ lnk["url"].replace("\\","") + "||" + lnk["display_url"].replace("\\","") for lnk in status.entities["urls"]]
 
 			if len(status.entities["hashtags"]) == 0:
 				parsed_tweet["related_hashtags"] = []
