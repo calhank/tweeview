@@ -444,9 +444,11 @@ $( document ).ready(function() {
                         )
                         .slice(0,10);
         } else {
-            var relHash = rawData["TOP_TAGS"].filter(function(x){
-                return x[0] != "(No Hashtag)";
-            }).slice(0,10);
+            var relHash = rawData["TOP_TAGS"]
+            // .filter(function(x){
+            //     return x[0] != "(No Hashtag)";
+            // })
+            .slice(0,10);
             var relLink = rawData["TOP_LINKS"].slice(0,10);
         }
 

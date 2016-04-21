@@ -40,6 +40,8 @@ pp = pprint.PrettyPrinter(indent=1).pprint
 
 def parse_tweet_array(tweet_array):
 
+	all_tweets_processed = set()
+
 	output = {}
 	output["TOTAL_TWEET_COUNT"] = len(tweet_array)
 	output["TOTAL_TWEET_COUNT_NON_RT"] = 0
@@ -53,55 +55,57 @@ def parse_tweet_array(tweet_array):
 	all_hashtags_processed = set()
 	
 	for tweet_tuple in tweet_array:
-		try:
-			tweet = tweet_tuple[1]
-			text_list = [t for t in tweet["text"].split(" ") if t.lower() not in STOP_WORDS and t.lower()[:4] !=  "http" and t[:1] not in STOP_CHARS and len(t) > 1]
-			ht = tweet["hashtag"]
-			all_hashtags_processed.add(ht)
-			output["TAG_COUNT"][ht] += 1
-			output["WORD_COUNT"].update(text_list)
-			output["LINK_COUNT"].update(tweet["related_links"])
-			if not tweet["is_rt"]:
-				output["TOTAL_TWEET_COUNT_NON_RT"] += 1
-				output["TAG_COUNT_NON_RT"][ht] += 1
-				output["WORD_COUNT_NON_RT"].update(text_list)
-				output["LINK_COUNT_NON_RT"].update(tweet["related_links"])
-
-			sentimentTuple = (tweet["timestamp"], tweet["sentiment"], tweet["is_rt"])
-			output["GLOBAL_SENTIMENT"].append( sentimentTuple )
+		if str(tweet_tuple[1]) not in all_tweets_processed:
+			all_tweets_processed.add(str(tweet_tuple[1]))
 			try:
-				output[ht]["sentiment_series"].append( sentimentTuple )
-				output[ht]["total_observations"] += 1
-				output[ht]["word_count"].update(text_list)
-				output[ht]["related_hashtags"].update(tweet["related_hashtags"])
-				output[ht]["related_links"].update(tweet["related_links"])
+				tweet = tweet_tuple[1]
+				text_list = [t for t in tweet["text"].split(" ") if t.lower() not in STOP_WORDS and t.lower()[:4] !=  "http" and t[:1] not in STOP_CHARS and len(t) > 1]
+				ht = tweet["hashtag"]
+				all_hashtags_processed.add(ht)
+				output["TAG_COUNT"][ht] += 1
+				output["WORD_COUNT"].update(text_list)
+				output["LINK_COUNT"].update(tweet["related_links"])
+				if not tweet["is_rt"]:
+					output["TOTAL_TWEET_COUNT_NON_RT"] += 1
+					output["TAG_COUNT_NON_RT"][ht] += 1
+					output["WORD_COUNT_NON_RT"].update(text_list)
+					output["LINK_COUNT_NON_RT"].update(tweet["related_links"])
 
-				output[ht]["word_count_non_rt"].update(text_list)
-				output[ht]["related_hashtags_non_rt"].update(tweet["related_hashtags"])
-				output[ht]["related_links_non_rt"].update(tweet["related_links"])
+				sentimentTuple = (tweet["timestamp"], tweet["sentiment"], tweet["is_rt"])
+				output["GLOBAL_SENTIMENT"].append( sentimentTuple )
+				try:
+					output[ht]["sentiment_series"].append( sentimentTuple )
+					output[ht]["total_observations"] += 1
+					output[ht]["word_count"].update(text_list)
+					output[ht]["related_hashtags"].update(tweet["related_hashtags"])
+					output[ht]["related_links"].update(tweet["related_links"])
 
-			except KeyError:
-				output[ht] = {}
-				output[ht]["sentiment_series"] = [ sentimentTuple ]
-				output[ht]["total_observations"] = 1
+					output[ht]["word_count_non_rt"].update(text_list)
+					output[ht]["related_hashtags_non_rt"].update(tweet["related_hashtags"])
+					output[ht]["related_links_non_rt"].update(tweet["related_links"])
 
-				output[ht]["word_count"] = Counter()
-				output[ht]["word_count"].update(text_list)
-				output[ht]["related_hashtags"] = Counter()
-				output[ht]["related_hashtags"].update(tweet["related_hashtags"])
-				output[ht]["related_links"] = Counter()
-				output[ht]["related_links"].update(tweet["related_links"])
+				except KeyError:
+					output[ht] = {}
+					output[ht]["sentiment_series"] = [ sentimentTuple ]
+					output[ht]["total_observations"] = 1
 
-				output[ht]["word_count_non_rt"] = Counter()
-				output[ht]["word_count_non_rt"].update(text_list)
-				output[ht]["related_hashtags_non_rt"] = Counter()
-				output[ht]["related_hashtags_non_rt"].update(tweet["related_hashtags"])
-				output[ht]["related_links_non_rt"] = Counter()
-				output[ht]["related_links_non_rt"].update(tweet["related_links"])
+					output[ht]["word_count"] = Counter()
+					output[ht]["word_count"].update(text_list)
+					output[ht]["related_hashtags"] = Counter()
+					output[ht]["related_hashtags"].update(tweet["related_hashtags"])
+					output[ht]["related_links"] = Counter()
+					output[ht]["related_links"].update(tweet["related_links"])
+
+					output[ht]["word_count_non_rt"] = Counter()
+					output[ht]["word_count_non_rt"].update(text_list)
+					output[ht]["related_hashtags_non_rt"] = Counter()
+					output[ht]["related_hashtags_non_rt"].update(tweet["related_hashtags"])
+					output[ht]["related_links_non_rt"] = Counter()
+					output[ht]["related_links_non_rt"].update(tweet["related_links"])
 
 
-		except Exception,e:
-			print e
+			except Exception,e:
+				print e
 
 	for ht in all_hashtags_processed:
 		output[ht]["word_count"] = output[ht]["word_count"].most_common()
