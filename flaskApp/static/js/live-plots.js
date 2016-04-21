@@ -43,14 +43,14 @@ var bucketSentimentArray = function(sentimentArray){
         return prev;
     }, {});
 
-    var sentimentArray = [];
+    var newSentimentArray = [];
     for( key in sentimentMap ){
         var obj = sentimentMap[ key ];
         var avg = obj.reduce(function(a,b){ return a + b; }) / obj.length;
-        sentimentArray.push( [key, avg] );
+        newSentimentArray.push( [key, avg] );
     }
 
-    return sentimentArray;
+    return newSentimentArray;
 };
 
 var movingAverageSentimentArray = function(sentimentArray, lags){
@@ -680,7 +680,7 @@ $( document ).ready(function() {
         }
     };
     
-    var updateData = function(getDataFromServer=true){
+    var updateData = function(getDataFromServer){
 
         if(getDataFromServer){
             $.post('/get-data', function(value) {
@@ -698,7 +698,7 @@ $( document ).ready(function() {
     };
 
     var launchVisuals = function(){
-        refreshLoop = setInterval( updateData, 2000 );
+        refreshLoop = setInterval( function(){ updateData(true); }, 2000 );
         filterOptions.css('display','none');
         streamChoice.css("display","none");
         pauseButton.css("display","inline");
@@ -773,7 +773,7 @@ $( document ).ready(function() {
 
     playButton.on('click', function(){
         console.log("Resume plot updates");
-        refreshLoop = setInterval( updateData, 2000 );
+        refreshLoop = setInterval( function(){ updateData(true); }, 2000 );
         pauseButton.css("display","inline");
         $(this).css("display","none");
     });
