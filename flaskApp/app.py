@@ -76,16 +76,29 @@ def parse_tweet_array(tweet_array):
 				output[ht]["related_hashtags"].update(tweet["related_hashtags"])
 				output[ht]["related_links"].update(tweet["related_links"])
 
+				output[ht]["word_count_non_rt"].update(text_list)
+				output[ht]["related_hashtags_non_rt"].update(tweet["related_hashtags"])
+				output[ht]["related_links_non_rt"].update(tweet["related_links"])
+
 			except KeyError:
 				output[ht] = {}
 				output[ht]["sentiment_series"] = [ sentimentTuple ]
 				output[ht]["total_observations"] = 1
+
 				output[ht]["word_count"] = Counter()
 				output[ht]["word_count"].update(text_list)
 				output[ht]["related_hashtags"] = Counter()
 				output[ht]["related_hashtags"].update(tweet["related_hashtags"])
 				output[ht]["related_links"] = Counter()
 				output[ht]["related_links"].update(tweet["related_links"])
+
+				output[ht]["word_count_non_rt"] = Counter()
+				output[ht]["word_count_non_rt"].update(text_list)
+				output[ht]["related_hashtags_non_rt"] = Counter()
+				output[ht]["related_hashtags_non_rt"].update(tweet["related_hashtags"])
+				output[ht]["related_links_non_rt"] = Counter()
+				output[ht]["related_links_non_rt"].update(tweet["related_links"])
+
 
 		except Exception,e:
 			print e

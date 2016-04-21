@@ -43,14 +43,14 @@ var bucketSentimentArray = function(sentimentArray){
         return prev;
     }, {});
 
-    var sentimentArray = [];
+    var newSentimentArray = [];
     for( key in sentimentMap ){
         var obj = sentimentMap[ key ];
         var avg = obj.reduce(function(a,b){ return a + b; }) / obj.length;
-        sentimentArray.push( [key, avg] );
+        newSentimentArray.push( [key, avg] );
     }
 
-    return sentimentArray;
+    return newSentimentArray;
 };
 
 var movingAverageSentimentArray = function(sentimentArray, lags){
@@ -229,6 +229,10 @@ $( document ).ready(function() {
             }
         });
 
+    // var updateHashtagFilterOptions = function(){
+    //     // hashtagFilterInput.selectize().addOption(data)
+    // };
+
     // hashtag filters!
     var backendFilterInput = $('#backendFilterInput')
         .selectize({
@@ -321,6 +325,11 @@ $( document ).ready(function() {
         rangeSelector: {
             buttons: [
             {
+                count: 30,
+                type: 'second',
+                text: '30S'
+            },
+            {
                 count: 2,
                 type: 'minute',
                 text: '2M'
@@ -407,7 +416,12 @@ $( document ).ready(function() {
         if( hashtagFilters != null){
             // console.log(hashtagFilters);
             var relHash = prepForTopRelated(
-                    combineTopRelatedElementCounts("related_hashtags", rawData, hashtagFilters)).sort(
+                    combineTopRelatedElementCounts("related_hashtags", rawData, hashtagFilters))
+                        .filter(function(x){
+                            // if lowercase filters match lowercase hashtag
+                            return hashtagFilters.map(function(x){return x.toLowerCase();}).indexOf(x[0].toLowerCase()) == -1;
+                        })
+                        .sort(
                             function compare(a,b) {
                               if (a[1] > b[1])
                                 return -1;
@@ -415,8 +429,7 @@ $( document ).ready(function() {
                                 return 1;
                               else 
                                 return 0;
-                            }
-                        )
+                        })
                         .slice(0,10);
             var relLink = prepForTopRelated(
                     combineTopRelatedElementCounts("related_links", rawData, hashtagFilters)).sort(
@@ -556,7 +569,7 @@ $( document ).ready(function() {
             .style('font-size', 12)
             .attr("dy", ".75em")
             .attr("y", function(d) { return sentHistYScale(d.y) - 13.5; })
-            .attr("x", function(d){return sentHistXScale(d.x) + 13;})
+            .attr("x", function(d){return sentHistXScale(d.x) + 12;})
             .attr("text-anchor", "middle")
             .attr('fill','black')
             .text(function(d) { return sentHistFormatCount(d.y); });
@@ -680,7 +693,7 @@ $( document ).ready(function() {
         }
     };
     
-    var updateData = function(getDataFromServer=true){
+    var updateData = function(getDataFromServer){
 
         if(getDataFromServer){
             $.post('/get-data', function(value) {
@@ -698,7 +711,7 @@ $( document ).ready(function() {
     };
 
     var launchVisuals = function(){
-        refreshLoop = setInterval( updateData, 2000 );
+        refreshLoop = setInterval( function(){ updateData(true); }, 2000 );
         filterOptions.css('display','none');
         streamChoice.css("display","none");
         pauseButton.css("display","inline");
@@ -773,7 +786,7 @@ $( document ).ready(function() {
 
     playButton.on('click', function(){
         console.log("Resume plot updates");
-        refreshLoop = setInterval( updateData, 2000 );
+        refreshLoop = setInterval( function(){ updateData(true); }, 2000 );
         pauseButton.css("display","inline");
         $(this).css("display","none");
     });
