@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>TweeView - Twitter Visualizations</title>
+    <title>Tweeview - Twitter Visualizations</title>
 
     <!-- Bootstrap Core CSS - Uses Bootswatch Flatly Theme: http://bootswatch.com/flatly/ -->
     <link href="{{ url_for('static', filename='css/bootstrap.css') }}" rel="stylesheet">
@@ -148,18 +148,45 @@
                 </div>
             </div>
 
+            <br><br>
+
             <div id="streamChoice" class="container">
-                    <div class="col-lg-12 text-center">
+            <div class="row">
+                     <div class="col-lg-12 text-center">
                         <div class="col-lg-4 col-lg-offset-2">
-                            <button id="sampleButton" class="btn btn-primary">Random Sample</button>    
+                            <button id="sampleButton" class="btn btn-primary">Random Sample</button>  
                             <p>Stream a random sample of 1% of all Twitter activity.</p>
                         </div>
+
                         <div class="col-lg-4">
-                            <button id="filterButton" class="btn btn-primary">Filtered Sample</button>    
+                            <button id="filterButton" class="btn btn-primary">Filtered Sample</button> 
                             <p>Limit stream to specific keywords or geography.</p>
-                        </div>                        
-                    </div>
+                        </div>     
+                    </div>               
             </div>
+            </div>
+
+
+<!--             <div id="streamChoice" class="container">
+                <div class="row">
+                    <div class="col-lg-6 col-md-6">
+                        <button id="sampleButton" class="btn btn-primary">Random Sample</button>    
+                    </div>
+                    <div class="col-lg-6 col-md-6">
+                        <button id="filterButton" class="btn btn-primary">Filtered Sample</button>    
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-6 col-md-6">
+                        <p>Stream a random sample of 1% of all Twitter activity.</p>
+                    </div>
+                    <div class="col-lg-6 col-md-6">
+                        <p>Limit stream to specific keywords or geography.</p>
+                    </div>
+                </div>
+            </div> -->
+
 
             <div id="filterOptions" class="container text-center" style="display:none;">
 
@@ -298,6 +325,8 @@
                         </div>
                     </div>
                 </div>
+
+                <br><br>
                 <!-- /.row -->
                 <div id="topTags" class="row">
                     <div class='row'>
@@ -305,8 +334,10 @@
                             <h3>Top Hashtags by Frequency</h3>
                         </div>
                     </div>
+                    <br><br>
+
                     <div class="row">
-                        <div id="top10Tags" class='col-lg-6 col-md-6'>
+                        <div id="top10Tags" class='col-lg-6 col-md-12'>
                             <table class='table table-striped table-hover text-right'>
                                 <thead>
                                     <tr>
@@ -326,7 +357,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div id="top20Tags" class='col-lg-6 col-md-6'>
+                        <div id="top20Tags" class='col-lg-6 col-md-12'>
                             <table class='table table-striped table-hover text-right'>
                                 <thead>
                                     <tr>
@@ -349,11 +380,13 @@
                     </div>
                 </div>
 
+                <hr>
                 <div class='row'>
                     <div class="text-center">
                         <h3>Hashtag Sentiment Detail</h3>
                     </div>
                 </div>
+                <br>
 
                  <div class="row" style="margin: 10px 0 10px 0;">
                     <div class="col-lg-6 col-lg-offset-3 text-center">
@@ -361,21 +394,39 @@
                     </div>
                 </div>
 
+                <br><br>
+
+                
                 <div id="sentimentData" class="row">
-                    <div class="col-lg-6">
+                    <div class="col-lg-6 col-md-12">
                         <div id="sentimentSeriesContainer"></div>
                     </div>
-                    <div class="col-lg-6">
+                    <div class="col-lg-6 col-md-12">
                         <div align="center" id="sentimentHistogramContainer"></div>
                     </div>
                 </div>
 
+<!--                 <div class="row">
+                    <div class="col-lg-12 col-md-12">
+                        <div id="sentimentSeriesContainer"></div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12 col-md-12">
+                        <div align="center" id="sentimentHistogramContainer"></div>
+                    </div>
+                </div> -->
+
+                <br>
+                <hr>
+                <br>
+
                 <div id="relatedItems" class="row" style="margin: 10px 0 0 0">
-                    <div class="col-lg-5">
+                    <div class="col-lg-5 col-md-6">
                             <h4 align="center">Most Common Words</h4>
                             <div style="margin:auto;" id="wordCloudContainer"></div>
                     </div>
-                    <div class="col-lg-3">
+                    <div class="col-lg-3 col-md-6">
                         
                         <table class='table table-striped table-hover text-right'>
                             <thead>
@@ -393,7 +444,7 @@
                         </table>
 
                     </div>
-                    <div class="col-lg-4">
+                    <div class="col-lg-4 col-md-12">
                         
                         <table class='table table-striped table-hover text-right'>
                             <thead>
@@ -442,11 +493,15 @@
                 </div>
             </div>
 
+            <br><br>
+
             <div class="row">
                 <div class="col-lg-12 col-centered">
                     <br>
 
                         <div class='tableauPlaceholder'><noscript><a href='#'><img alt='Hash_Sentiment ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Ha&#47;Hash_Sentiment&#47;Hash_Sentiment&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz' width='1004' height='869' style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='site_root' value='' /><param name='name' value='Hash_Sentiment&#47;Hash_Sentiment' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Ha&#47;Hash_Sentiment&#47;Hash_Sentiment&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='showTabs' value='y' /></object></div>
+
+                        <br><hr><br>
 
                         <div class='tableauPlaceholder'><noscript><a href='#'><img alt='Hash_Date ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Ha&#47;Hash_Date&#47;Hash_Date&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz' width='1004' height='869' style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='site_root' value='' /><param name='name' value='Hash_Date&#47;Hash_Date' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Ha&#47;Hash_Date&#47;Hash_Date&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='showTabs' value='y' /></object></div>
 
@@ -462,7 +517,7 @@
             <div class="container">
                 <div class="row">
                     <div class="col-lg-12">
-                        Copyright &copy; Your Website 2016
+                        Copyright &copy; Tweeview 2016
                     </div>
                 </div>
             </div>
