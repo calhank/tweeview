@@ -15,9 +15,7 @@ twitter_stopwords = ["rt","i'm","&amp;","u"]
 STOP_CHARS = frozenset(list(string.punctuation))
 STOP_WORDS = frozenset(stopwords.words('english') + twitter_stopwords)
 
-# EBS naming requirement
-application = Flask(__name__)
-app = application 
+app = Flask(__name__)
 
 app.config.from_object(__name__)
 
