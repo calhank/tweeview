@@ -1,6 +1,6 @@
-# import sqlite3
+
+# Imports 
 from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash
-# from contextlib import closing
 import tweepy 
 from vaderSentiment.vaderSentiment import sentiment
 from time import time, mktime
@@ -15,13 +15,7 @@ twitter_stopwords = ["rt","i'm","&amp;","u"]
 STOP_CHARS = frozenset(list(string.punctuation))
 STOP_WORDS = frozenset(stopwords.words('english') + twitter_stopwords)
 
-# configuration
-# DATABASE = '/tmp/flaskApp.db'
-# DEBUG = True
-# SECRET_KEY = 'daa1306d061b233fcdf244f2974efcbbe67d47238d105c0af968e380'
-# USERNAME = 'admin'
-# PASSWORD = 'default'
-
+# Config 
 app = Flask(__name__)
 app.config.from_object(__name__)
 
