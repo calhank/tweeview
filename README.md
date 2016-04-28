@@ -30,7 +30,7 @@ Twitter stream via the Tweepy streaming library for Python. Data stream is proce
 1. Python / Flask - Allows local hosting of web app framework, easy integration with existing Twitter API and sentiment analysis libraries
 1. vaderSentiment - Sentiment analysis algorithm and Python library specifically designed for social media text
 2. D3 / Highcharts - Javascript visualization libraries made live front-end data filtering and plot updates possible. Highcharts provided a good deal of "free" functionality, especially in the sparklines and time series plots
-3. jQCloud provided flexible word cloud creation
+3. jQCloud - Provided flexible word cloud creation
 
 
 ## Running the Application
