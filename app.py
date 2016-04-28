@@ -19,7 +19,7 @@ STOP_WORDS = frozenset(stopwords.words('english') + twitter_stopwords)
 app = Flask(__name__)
 app.config.from_object(__name__)
 
-# Tweepy 
+# Universal Tweepy API Credentials
 keys = {
 	
 	'consumer_key': 'U2UbUq8DX2WlbfbR9m3nY0tcW'
@@ -29,13 +29,16 @@ keys = {
 
 }  
 
-
+# pretty printer for debugging
 pp = pprint.PrettyPrinter(indent=1).pprint
 
 def parse_tweet_array(tweet_array):
+	"""Method to parse a list of streamed Tweet tuples with format (unix timestamp, tweet object)"""
 
+	# ensure deduplication
 	all_tweets_processed = set()
 
+	# init output fields
 	output = {}
 	output["TOTAL_TWEET_COUNT"] = len(tweet_array)
 	output["TOTAL_TWEET_COUNT_NON_RT"] = 0
@@ -46,14 +49,14 @@ def parse_tweet_array(tweet_array):
 	output["GLOBAL_SENTIMENT"] = []
 	output["WORD_COUNT"] = Counter()
 	output["WORD_COUNT_NON_RT"] = Counter()
-	all_hashtags_processed = set()
+	all_hashtags_processed = set() # unique hashtags
 	
 	for tweet_tuple in tweet_array:
-		if str(tweet_tuple[1]) not in all_tweets_processed:
-			all_tweets_processed.add(str(tweet_tuple[1]))
-			try:
+		if str(tweet_tuple[1]) not in all_tweets_processed: # ensure deduplication
+			all_tweets_processed.add(str(tweet_tuple[1])) # ensure deduplication
+			try: # fail silently
 				tweet = tweet_tuple[1]
-				text_list = [t for t in tweet["text"].split(" ") if t.lower() not in STOP_WORDS and t.lower()[:4] !=  "http" and t[:1] not in STOP_CHARS and len(t) > 1]
+				text_list = [t for t in tweet["text"].split(" ") if t.lower() not in STOP_WORDS and t.lower()[:4] !=  "http" and t[:1] not in STOP_CHARS and len(t) > 1] # get unique text that is not a URL, hashtag, or single-letter word
 				ht = tweet["hashtag"]
 				all_hashtags_processed.add(ht)
 				output["TAG_COUNT"][ht] += 1
@@ -65,9 +68,11 @@ def parse_tweet_array(tweet_array):
 					output["WORD_COUNT_NON_RT"].update(text_list)
 					output["LINK_COUNT_NON_RT"].update(tweet["related_links"])
 
+				# data for global and filtered sentiment time series plots
 				sentimentTuple = (tweet["timestamp"], tweet["sentiment"], tweet["is_rt"])
 				output["GLOBAL_SENTIMENT"].append( sentimentTuple )
 				try:
+					# if hashtag already has entry in output
 					output[ht]["sentiment_series"].append( sentimentTuple )
 					output[ht]["total_observations"] += 1
 					output[ht]["word_count"].update(text_list)
@@ -78,7 +83,8 @@ def parse_tweet_array(tweet_array):
 					output[ht]["related_hashtags_non_rt"].update(tweet["related_hashtags"])
 					output[ht]["related_links_non_rt"].update(tweet["related_links"])
 
-				except KeyError:
+				except KeyError: 
+					# if hashtag did not yet appear in output
 					output[ht] = {}
 					output[ht]["sentiment_series"] = [ sentimentTuple ]
 					output[ht]["total_observations"] = 1
@@ -102,10 +108,12 @@ def parse_tweet_array(tweet_array):
 				print e
 
 	for ht in all_hashtags_processed:
+		#transform counters to ordered lists of decreasing frequency
 		output[ht]["word_count"] = output[ht]["word_count"].most_common()
 		output[ht]["related_hashtags"] = output[ht]["related_hashtags"].most_common()
 		output[ht]["related_links"] = output[ht]["related_links"].most_common()
 
+	# get global top counts
 	output["TOP_TAGS"] = output["TAG_COUNT"].most_common(100)
 	output["TOP_TAGS_NON_RT"] = output["TAG_COUNT_NON_RT"].most_common(100)
 	output["TOP_WORDS"] = output["WORD_COUNT"].most_common(100)
@@ -117,9 +125,12 @@ def parse_tweet_array(tweet_array):
 	return output
 
 def truncate_tweet_array(tweet_array, max_tweets=100000, max_time_seconds = 60*30 ):
+
+	"""Method to truncate the stream of tweets to ensure it can be kept in memory. Defaults to last 100000 tweets that occured in the last 30 minutes"""
+
 	return [tweet for tweet in tweet_array if time() - tweet[0] <= max_time_seconds ][-max_tweets:]
 	
-# data
+# global data
 tweet_array = list()
 
 ## TWEEPY METHODS AND INITIALIZATION
@@ -145,10 +156,12 @@ class TweeviewListener(tweepy.StreamListener):
 			parsed_tweet["related_links"] = [ lnk["url"].replace("\\","") + "||" + lnk["display_url"].replace("\\","") for lnk in status.entities["urls"]]
 
 			if len(status.entities["hashtags"]) == 0:
+				# handle case of tweet with no hashtags
 				parsed_tweet["related_hashtags"] = []
 				parsed_tweet["hashtag"] = "(No Hashtag)"
 				tweet_array.append( (now, copy.deepcopy(parsed_tweet)) )
 			else:
+				# separate stream entry for each hashtag
 				for ht in status.entities["hashtags"]:
 					parsed_tweet["related_hashtags"] = [ lnk["text"] for lnk in status.entities["hashtags"] if lnk["text"] != ht["text"] ]
 					parsed_tweet["hashtag"] = ht["text"]
