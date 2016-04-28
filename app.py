@@ -6,7 +6,7 @@ from vaderSentiment.vaderSentiment import sentiment
 from time import time, mktime
 import copy
 import json 
-import pprint
+#import pprint # pretty printing for debugging
 from collections import Counter
 from nltk.corpus import stopwords
 import string
@@ -30,7 +30,7 @@ keys = {
 }  
 
 # pretty printer for debugging
-pp = pprint.PrettyPrinter(indent=1).pprint
+#pp = pprint.PrettyPrinter(indent=1).pprint
 
 def parse_tweet_array(tweet_array):
 	"""Method to parse a list of streamed Tweet tuples with format (unix timestamp, tweet object)"""
